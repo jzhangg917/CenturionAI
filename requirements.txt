@@ -5,3 +5,4 @@ pandas-ta
 plotly
 requests
 textblob
+streamlit-autorefresh

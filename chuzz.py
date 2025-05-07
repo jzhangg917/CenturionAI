@@ -10,7 +10,7 @@ import csv
 from datetime import datetime
 import os
 import json
-
+from streamlit_autorefresh import st_autorefresh
 
 NEWS_API_KEY = "aa0de5faf38c418bb294c12ac5559726"
 
@@ -184,7 +184,7 @@ def log_signal(ticker, signal_type, confidence, indicators, sentiment_score, hea
         ])
 
 st.set_page_config(page_title="Live Trading Dashboard", layout="wide")
-
+st_autorefresh(interval=60000, key="refresh")
 st.title("📈 Live Stock Dashboard")
 
 # Sidebar
@@ -247,14 +247,11 @@ last_alerts = load_last_alerts()
 last_trade_signal = last_alerts.get("signal")
 last_news_headline = last_alerts.get("news")
 
-while True:
-    df = fetch_data()
+df = fetch_data()
 
-    if df["MACD"].isna().all() or df["MACD_signal"].isna().all():
-        st.warning("⚠️ Not enough data to calculate MACD at this interval. Try a smaller timeframe.")
-        time.sleep(60)
-        continue
-
+if df["MACD"].isna().all() or df["MACD_signal"].isna().all():
+    st.warning("⚠️ Not enough data to calculate MACD at this interval. Try a smaller timeframe.")
+else:
     with placeholder.container():
         st.subheader(f"Live price for {ticker} — Interval: {interval}")
         
@@ -289,7 +286,6 @@ while True:
             st.sidebar.markdown("---")
             sentiment_total += article["score"]
 
-        # News-based recommendation
         avg_sentiment = sentiment_total / len(news) if news else 0
 
         if avg_sentiment > 0.2:
@@ -300,11 +296,8 @@ while True:
                     f"{news[0]['headline']} ({news[0]['source']})\n"
                     f"Summary: {news[0]['summary']}"
                 )
-
-                # Update memory
                 last_alerts["news"] = news[0]["headline"]
                 save_last_alerts(last_alerts)
-
                 last_news_headline = news[0]["headline"]
         elif avg_sentiment < -0.2:
             st.sidebar.error("📉 Suggestion: SELL — Negative sentiment")
@@ -314,21 +307,17 @@ while True:
                     f"{news[0]['headline']} ({news[0]['source']})\n"
                     f"Summary: {news[0]['summary']}"
                 )
-
-                # Update memory
                 last_alerts["news"] = news[0]["headline"]
                 save_last_alerts(last_alerts)
-
                 last_news_headline = news[0]["headline"]
         else:
             st.sidebar.info("📊 Suggestion: HOLD — Mixed/Neutral sentiment")
             last_news_headline = news[0]["headline"]
 
-        # === Trade Signal Logic (RSI + MACD + EMA) ===
+        # === Trade Signal Logic ===
         signal = ""
-        reason = ""
-        score = 0
         checks = []
+        score = 0
 
         if last_rsi < 30:
             score += 1
@@ -358,15 +347,10 @@ while True:
                 st.write(check)
 
             if enable_alerts and last_trade_signal != signal:
-                send_discord_alert(
-                    f"**{signal}** for `{ticker}`\n{reason}\n" + "\n".join(checks)
-                )
+                send_discord_alert(f"**{signal}** for `{ticker}`\n{reason}\n" + "\n".join(checks))
                 log_signal(ticker, signal, confidence, checks, avg_sentiment, news[0]["headline"])
-                
-                # Update memory
                 last_alerts["signal"] = signal
                 save_last_alerts(last_alerts)
-
                 last_trade_signal = signal
         else:
             # SELL logic
@@ -401,21 +385,16 @@ while True:
                     st.write(check)
 
                 if enable_alerts and last_trade_signal != signal:
-                    send_discord_alert(
-                        f"**{signal}** for `{ticker}`\n{reason}\n" + "\n".join(checks)
-                    )
+                    send_discord_alert(f"**{signal}** for `{ticker}`\n{reason}\n" + "\n".join(checks))
                     log_signal(ticker, signal, confidence, checks, avg_sentiment, news[0]["headline"])
-
-                    # Update memory
                     last_alerts["signal"] = signal
                     save_last_alerts(last_alerts)
-
                     last_trade_signal = signal
             else:
                 st.info("Indicators are neutral — no strong buy or sell signal right now.")
                 last_trade_signal = "Neutral"
-            
-            # === Signal Log Viewer ===
+
+        # === Signal Log Viewer ===
         st.markdown("---")
         with st.expander("📜 View Signal History"):
             try:
@@ -423,5 +402,3 @@ while True:
                 st.dataframe(df_log.tail(20), use_container_width=True)
             except FileNotFoundError:
                 st.info("No signals logged yet.")
-
-    time.sleep(60)
