@@ -6,6 +6,11 @@ import time
 import requests
 import plotly.graph_objects as go
 from textblob import TextBlob
+import csv
+from datetime import datetime
+import os
+import json
+
 
 NEWS_API_KEY = "aa0de5faf38c418bb294c12ac5559726"
 
@@ -147,6 +152,36 @@ def send_discord_alert(message):
     except Exception as e:
         st.error(f"Discord alert error: {e}")
 
+ALERT_TRACK_FILE = "last_alert.json"
+
+def load_last_alerts():
+    if os.path.exists(ALERT_TRACK_FILE):
+        with open(ALERT_TRACK_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_last_alerts(data):
+    with open(ALERT_TRACK_FILE, "w") as f:
+        json.dump(data, f)
+
+def log_signal(ticker, signal_type, confidence, indicators, sentiment_score, headline):
+    log_file = "signals_log.csv"
+    file_exists = os.path.isfile(log_file)
+
+    with open(log_file, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        if not file_exists:
+            writer.writerow(["Timestamp", "Ticker", "Signal", "Confidence", "Indicators", "News Sentiment", "Headline"])
+        
+        writer.writerow([
+            datetime.now().strftime("%Y-%m-%d %I:%M:%S %p"),
+            ticker.upper(),
+            signal_type,
+            f"{confidence}%",
+            "; ".join(indicators),
+            round(sentiment_score, 2),
+            headline
+        ])
 
 st.set_page_config(page_title="Live Trading Dashboard", layout="wide")
 
@@ -208,8 +243,9 @@ def fetch_data():
 
     return df
 
-last_trade_signal = None
-last_news_headline = None
+last_alerts = load_last_alerts()
+last_trade_signal = last_alerts.get("signal")
+last_news_headline = last_alerts.get("news")
 
 while True:
     df = fetch_data()
@@ -264,8 +300,12 @@ while True:
                     f"{news[0]['headline']} ({news[0]['source']})\n"
                     f"Summary: {news[0]['summary']}"
                 )
-                last_news_headline = news[0]["headline"]
 
+                # Update memory
+                last_alerts["news"] = news[0]["headline"]
+                save_last_alerts(last_alerts)
+
+                last_news_headline = news[0]["headline"]
         elif avg_sentiment < -0.2:
             st.sidebar.error("📉 Suggestion: SELL — Negative sentiment")
             if enable_alerts and news[0]["headline"] != last_news_headline:
@@ -274,8 +314,12 @@ while True:
                     f"{news[0]['headline']} ({news[0]['source']})\n"
                     f"Summary: {news[0]['summary']}"
                 )
-                last_news_headline = news[0]["headline"]
 
+                # Update memory
+                last_alerts["news"] = news[0]["headline"]
+                save_last_alerts(last_alerts)
+
+                last_news_headline = news[0]["headline"]
         else:
             st.sidebar.info("📊 Suggestion: HOLD — Mixed/Neutral sentiment")
             last_news_headline = news[0]["headline"]
@@ -317,8 +361,13 @@ while True:
                 send_discord_alert(
                     f"**{signal}** for `{ticker}`\n{reason}\n" + "\n".join(checks)
                 )
-                last_trade_signal = signal
+                log_signal(ticker, signal, confidence, checks, avg_sentiment, news[0]["headline"])
+                
+                # Update memory
+                last_alerts["signal"] = signal
+                save_last_alerts(last_alerts)
 
+                last_trade_signal = signal
         else:
             # SELL logic
             score = 0
@@ -355,9 +404,24 @@ while True:
                     send_discord_alert(
                         f"**{signal}** for `{ticker}`\n{reason}\n" + "\n".join(checks)
                     )
+                    log_signal(ticker, signal, confidence, checks, avg_sentiment, news[0]["headline"])
+
+                    # Update memory
+                    last_alerts["signal"] = signal
+                    save_last_alerts(last_alerts)
+
                     last_trade_signal = signal
             else:
                 st.info("Indicators are neutral — no strong buy or sell signal right now.")
                 last_trade_signal = "Neutral"
+            
+            # === Signal Log Viewer ===
+        st.markdown("---")
+        with st.expander("📜 View Signal History"):
+            try:
+                df_log = pd.read_csv("signals_log.csv")
+                st.dataframe(df_log.tail(20), use_container_width=True)
+            except FileNotFoundError:
+                st.info("No signals logged yet.")
 
     time.sleep(60)
