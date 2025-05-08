@@ -8,3 +8,4 @@ fuzzywuzzy
 python-Levenshtein
 websocket-client
 requests
+streamlit-autorefresh
