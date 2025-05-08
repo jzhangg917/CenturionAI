@@ -11,7 +11,7 @@ import time
 import requests
 import plotly.graph_objects as go
 from textblob import TextBlob
-from fuzzywuzzy import fuzz
+from rapidfuzz import fuzz
 
 import websocket
 import json

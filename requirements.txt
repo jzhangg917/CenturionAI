@@ -3,6 +3,8 @@ yfinance
 pandas
 pandas-ta
 plotly
-requests
 textblob
-streamlit-autorefresh
+fuzzywuzzy
+python-Levenshtein
+websocket-client
+requests
