@@ -56,6 +56,8 @@ st.markdown(f"<h3 style='text-align:center;'>⏱️ Current Time: {current_time}
 
 # === Header ===
 st.title("📈 Live Stock Dashboard")
+build_time = datetime.now(pytz.timezone("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p")
+st.markdown(f"<p style='text-align:right; font-size:14px; color:gray;'>🛠️ Last updated: {build_time} ET</p>", unsafe_allow_html=True)
 
 # === Sidebar Inputs ===
 ticker = st.sidebar.text_input("Enter Stock Ticker", "AAPL")
