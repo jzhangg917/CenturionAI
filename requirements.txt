@@ -1,4 +1,8 @@
+setuptools>=65.5.0
+wheel
+
 streamlit
+streamlit-autorefresh
 yfinance
 pandas
 pandas-ta
@@ -8,4 +12,3 @@ fuzzywuzzy
 python-Levenshtein
 websocket-client
 requests
-streamlit-autorefresh
