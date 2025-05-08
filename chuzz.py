@@ -12,10 +12,10 @@ import requests
 import plotly.graph_objects as go
 from textblob import TextBlob
 from rapidfuzz import fuzz
-
 import websocket
 import json
 import threading
+import pytz 
 
 LIVE_PRICE = None
 API_KEY = "d0e26d1r01qv1dmkj2bgd0e26d1r01qv1dmkj2c0"
@@ -48,7 +48,9 @@ last_news_headline = None
 st_autorefresh(interval=60000, key="refresh")
 
 # === Clock (center aligned) ===
-now = datetime.now()
+eastern = pytz.timezone("America/New_York")
+now = datetime.now(eastern)
+current_time = now.strftime("%I:%M:%S %p")
 current_time = now.strftime("%I:%M:%S %p")
 st.markdown(f"<h3 style='text-align:center;'>⏱️ Current Time: {current_time}</h3>", unsafe_allow_html=True)
 
