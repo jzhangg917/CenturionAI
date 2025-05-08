@@ -50,8 +50,7 @@ st_autorefresh(interval=60000, key="refresh")
 # === Clock (center aligned) ===
 eastern = pytz.timezone("America/New_York")
 now = datetime.now(eastern)
-current_time = now.strftime("%I:%M:%S %p")
-current_time = now.strftime("%I:%M:%S %p")
+current_time = now.strftime("%I:%M:%S %p %Z")
 st.markdown(f"<h3 style='text-align:center;'>⏱️ Current Time: {current_time}</h3>", unsafe_allow_html=True)
 
 # === Header ===
