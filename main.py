@@ -16,6 +16,51 @@ import websocket
 import json
 import threading
 import pytz 
+import pandas_ta as ta
+
+def analyze_candles(df, lookback=30):
+    """Return list of patterns, volume spike flag, and a simple grade."""
+    # -- candlestick patterns (positive = bullish, negative = bearish) --
+    cdl = df.ta
+    vals = {
+        "Hammer":      cdl.cdl_hammer().iloc[-1],
+        "Shooting Star": cdl.cdl_shooting_star().iloc[-1],
+        "Bullish Engulfing":  cdl.cdl_engulfing().iloc[-1],
+        "Doji":        cdl.cdl_doji().iloc[-1],
+        "Morning Star": cdl.cdl_morning_star().iloc[-1],
+        "Evening Star": cdl.cdl_evening_star().iloc[-1],
+    }
+    patterns = []
+    for name, v in vals.items():
+        if v > 0:
+            patterns.append(name if name!="Bullish Engulfing" else "Bullish Engulfing")
+        elif v < 0 and name=="Bullish Engulfing":
+            patterns.append("Bearish Engulfing")
+
+    # -- volume spike? compare last bar vs avg of lookback bars --
+    avg_vol = df["Volume"].tail(lookback).mean()
+    last_vol = df["Volume"].iloc[-1]
+    vol_spike = last_vol > avg_vol * 1.5
+
+    # -- simple grade: 1 point per pattern + 1 for volume spike --
+    score = len(patterns) + (1 if vol_spike else 0)
+    grade = {0:"C", 1:"B", 2:"A", 3:"A+"}.get(min(score, 3), "C")
+
+    return patterns, vol_spike, grade
+
+
+with placeholder.container():
+    patterns, vol_spike, grade = analyze_candles(df, lookback)
+
+    st.markdown("### 🕯️ Candlestick Patterns")
+    if patterns:
+        st.write("Detected:", ", ".join(patterns))
+    else:
+        st.write("No major patterns detected.")
+
+    st.write(f"🔊 Volume spike: {'💥 Yes' if vol_spike else 'No'}")
+    st.write(f"🌟 Trader Grade: **{grade}**")
+
 
 LIVE_PRICE = None
 API_KEY = "d0e26d1r01qv1dmkj2bgd0e26d1r01qv1dmkj2c0"
