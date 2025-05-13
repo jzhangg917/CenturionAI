@@ -2,9 +2,9 @@
 
 import os, sys, json
 import pandas as pd
-import pandas_ta as ta
+import pandas_ta as ta # type: ignore
 from datetime import datetime
-import yfinance as yf
+import yfinance as yf # type: ignore
 import pytz
 
 OUTPUT_DIR = "frontend"
