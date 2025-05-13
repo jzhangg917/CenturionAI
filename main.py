@@ -149,25 +149,33 @@ def plot_candlestick(df):
     return fig
 
 def analyze_candles(df, lookback=30):
-    cdl = df.ta
+    """Return list of patterns, volume spike flag, and a simple grade."""
+    # -- candlestick patterns (positive = bullish, negative = bearish) --
     vals = {
-        "Hammer":            cdl.cdl_hammer().iloc[-1],
-        "Shooting Star":     cdl.cdl_shooting_star().iloc[-1],
-        "Bullish Engulfing": cdl.cdl_engulfing().iloc[-1],
-        "Doji":              cdl.cdl_doji().iloc[-1],
-        "Morning Star":      cdl.cdl_morning_star().iloc[-1],
-        "Evening Star":      cdl.cdl_evening_star().iloc[-1],
+        "Hammer":            ta.cdl_hammer(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
+        "Shooting Star":     ta.cdl_shooting_star(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
+        "Bullish Engulfing": ta.cdl_engulfing(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
+        "Doji":              ta.cdl_doji(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
+        "Morning Star":      ta.cdl_morning_star(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
+        "Evening Star":      ta.cdl_evening_star(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
     }
+
     patterns = []
-    for name,v in vals.items():
-        if v>0:
+    for name, v in vals.items():
+        if v > 0:
             patterns.append(name)
-        elif v<0 and name=="Bullish Engulfing":
+        elif v < 0 and name == "Bullish Engulfing":
             patterns.append("Bearish Engulfing")
+
+    # -- volume spike? compare last bar vs avg of lookback bars --
     avg_vol = df["Volume"].tail(lookback).mean()
-    vol_spike = df["Volume"].iloc[-1] > avg_vol*1.5
+    last_vol = df["Volume"].iloc[-1]
+    vol_spike = last_vol > avg_vol * 1.5
+
+    # -- simple grade: 1 point per pattern + 1 for volume spike --
     score = len(patterns) + (1 if vol_spike else 0)
-    grade = {0:"C",1:"B",2:"A",3:"A+"}.get(min(score,3),"C")
+    grade = {0: "C", 1: "B", 2: "A", 3: "A+"}.get(min(score, 3), "C")
+
     return patterns, vol_spike, grade
 
 def confirmed_on_higher_tf(ticker, patterns, lookback):
