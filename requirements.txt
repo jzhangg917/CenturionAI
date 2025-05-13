@@ -1,13 +1,8 @@
-setuptools>=65.5.0
-wheel
-
-numpy==1.26.4  # ✅ Compatible with Python 3.12, avoids distutils
-pandas==2.2.3
-pandas-ta==0.3.14b0
-
 streamlit
 streamlit-autorefresh
 yfinance
+pandas
+pandas-ta
 plotly
 textblob
 fuzzywuzzy
