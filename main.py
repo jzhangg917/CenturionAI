@@ -2,18 +2,19 @@ from datetime import datetime, timedelta
 import time
 import json
 import threading
+import os
 
-import streamlit as st
-from streamlit_autorefresh import st_autorefresh
-import yfinance as yf
-import pandas as pd
-import pandas_ta as ta
-import requests
-import plotly.graph_objects as go
-from textblob import TextBlob
-from rapidfuzz import fuzz
-import websocket
-import pytz
+import streamlit as st # type: ignore
+from streamlit_autorefresh import st_autorefresh # type: ignore
+import yfinance as yf # type: ignore
+import pandas as pd # type: ignore
+import pandas_ta as ta # type: ignore
+import requests # type: ignore
+import plotly.graph_objects as go # type: ignore
+from textblob import TextBlob # type: ignore
+from rapidfuzz import fuzz # type: ignore
+import websocket # type: ignore
+import pytz # type: ignore
 
 # === Streamlit Setup ===
 st.set_page_config(page_title="NeuroTraderAI Dashboard", layout="wide")
@@ -26,11 +27,12 @@ last_trade_signal = None
 last_news_headline = None
 ws_thread = None
 
-# === API Keys & URLs ===
+# === Constants & Files ===
 FINNHUB_API_KEY     = "d0e26d1r01qv1dmkj2bgd0e26d1r01qv1dmkj2c0"
 FINNHUB_WS          = f"wss://ws.finnhub.io?token={FINNHUB_API_KEY}"
 NEWS_API_KEY        = "aa0de5faf38c418bb294c12ac5559726"
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/…"
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1369524379959955497/60qtH7hFrkT107Vol5gP4IOwzdYiYJ7KD_EVPxLcBx6bJNedfacpcbtpAMtPLrikCiM4"
+JOURNAL_FILE        = "trade_journal.txt"
 POSITIVE_KEYWORDS   = ["beat estimates","record revenue","surges","acquisition","partnership","upgrade","strong guidance","expands"]
 NEGATIVE_KEYWORDS   = ["missed estimates","downgrade","layoffs","recall","plunges","investigation","lawsuit","weak demand"]
 
@@ -51,7 +53,8 @@ def run_ws():
 # === Helper Functions ===
 def send_discord_alert(message):
     global last_alert_time
-    if not enable_alerts: return
+    if not enable_alerts:
+        return
     now = datetime.now()
     if last_alert_time and (now - last_alert_time) < timedelta(minutes=5):
         return
@@ -61,6 +64,18 @@ def send_discord_alert(message):
             last_alert_time = now
     except:
         pass
+
+def journal_trade(signal, ticker, entry, stop_loss, take_profit, patterns, interval, confidence):
+    eastern = pytz.timezone("America/New_York")
+    ts = datetime.now(eastern).strftime("%Y-%m-%d %I:%M:%S %p %Z")
+    line = (
+        f"{ts} | {signal} {ticker} @ ${entry:.2f} | "
+        f"SL ${stop_loss:.2f} | TP ${take_profit:.2f} | "
+        f"Patterns: {', '.join(patterns) or 'None'} | "
+        f"TF: {interval} | Confidence: {confidence}%\n"
+    )
+    with open(JOURNAL_FILE, "a") as f:
+        f.write(line)
 
 def fetch_news(ticker):
     url = f"https://newsapi.org/v2/everything?q={ticker}&sortBy=publishedAt&language=en&pageSize=20&apiKey={NEWS_API_KEY}"
@@ -90,7 +105,8 @@ def fetch_news(ticker):
     for art in scored:
         k = art["headline"].strip().lower()
         if k not in seen:
-            seen.add(k); out.append(art)
+            seen.add(k)
+            out.append(art)
     out.sort(key=lambda x: abs(x["score"]), reverse=True)
     return out[:5]
 
@@ -116,7 +132,6 @@ def fetch_data(ticker, interval, lookback):
         df["MACD"], df["MACD_signal"] = None, None
     df["EMA_9"] = ta.ema(df["Close"], length=9)
     df["EMA_21"] = ta.ema(df["Close"], length=21)
-    # ← Add ATR here
     df["ATR"] = ta.atr(df["High"], df["Low"], df["Close"], length=14)
     return df
 
@@ -136,16 +151,17 @@ def plot_candlestick(df):
 def analyze_candles(df, lookback=30):
     cdl = df.ta
     vals = {
-        "Hammer": cdl.cdl_hammer().iloc[-1],
-        "Shooting Star": cdl.cdl_shooting_star().iloc[-1],
+        "Hammer":            cdl.cdl_hammer().iloc[-1],
+        "Shooting Star":     cdl.cdl_shooting_star().iloc[-1],
         "Bullish Engulfing": cdl.cdl_engulfing().iloc[-1],
-        "Doji": cdl.cdl_doji().iloc[-1],
-        "Morning Star": cdl.cdl_morning_star().iloc[-1],
-        "Evening Star": cdl.cdl_evening_star().iloc[-1],
+        "Doji":              cdl.cdl_doji().iloc[-1],
+        "Morning Star":      cdl.cdl_morning_star().iloc[-1],
+        "Evening Star":      cdl.cdl_evening_star().iloc[-1],
     }
     patterns = []
     for name,v in vals.items():
-        if v>0: patterns.append(name)
+        if v>0:
+            patterns.append(name)
         elif v<0 and name=="Bullish Engulfing":
             patterns.append("Bearish Engulfing")
     avg_vol = df["Volume"].tail(lookback).mean()
@@ -154,7 +170,6 @@ def analyze_candles(df, lookback=30):
     grade = {0:"C",1:"B",2:"A",3:"A+"}.get(min(score,3),"C")
     return patterns, vol_spike, grade
 
-# --- Multi‐TF confirmation ---
 def confirmed_on_higher_tf(ticker, patterns, lookback):
     df15 = fetch_data(ticker, "15m", lookback*3)
     if df15 is None: return False
@@ -162,39 +177,34 @@ def confirmed_on_higher_tf(ticker, patterns, lookback):
     return any(p in pats15 for p in patterns)
 
 # === Sidebar Inputs ===
-ticker         = st.sidebar.text_input("Ticker", "AAPL").upper()
-interval       = st.sidebar.selectbox("Interval", ["1m","5m","15m","1h","1d"], index=0)
-lookback       = st.sidebar.slider("History (minutes)",30,240,60,30)
-enable_alerts  = st.sidebar.checkbox("Discord Alerts",True)
+ticker        = st.sidebar.text_input("Ticker", "AAPL").upper()
+interval      = st.sidebar.selectbox("Interval", ["1m","5m","15m","1h","1d"], index=0)
+lookback      = st.sidebar.slider("History (minutes)",30,240,60,30)
+enable_alerts = st.sidebar.checkbox("Discord Alerts", True)
 
-# Start WS thread
 TICKER = ticker
 if ws_thread is None:
     ws_thread = threading.Thread(target=run_ws, daemon=True)
     ws_thread.start()
 
-# --- Header & Timestamp ---
 eastern = pytz.timezone("America/New_York")
 now     = datetime.now(eastern).strftime("%I:%M:%S %p %Z")
 build   = datetime.now(eastern).strftime("%Y-%m-%d %I:%M:%S %p")
 st.markdown(f"<h3 style='text-align:center;'>⏱️ Current Time: {now}</h3>", unsafe_allow_html=True)
 st.title("💡 NeuroTraderAI Live Dashboard")
-st.markdown(f"<p style='text-align:right; color:gray;'>🛠️ Last build: {build} ET</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align:right;color:gray;'>🛠️ Last build: {build} ET</p>", unsafe_allow_html=True)
 
 placeholder = st.empty()
 
-# === Main Loop ===
 while True:
     df = fetch_data(ticker, interval, lookback)
     if df is None:
         st.error("❌ Invalid ticker or no data.")
         time.sleep(30); continue
     if df["MACD"].isna().all():
-        st.warning("⚠️ Not enough data for MACD.")
-        time.sleep(60); continue
+        st.warning("⚠️ Not enough data for MACD."); time.sleep(60); continue
 
     with placeholder.container():
-        # LIVE PRICE & PCT
         current    = LIVE_PRICE or df["Close"].iloc[-1]
         latest     = df["Close"].iloc[-1]
         real_ch    = current - latest
@@ -204,11 +214,9 @@ while True:
         arrow      = "🔺" if real_ch>0 else "🔻" if real_ch<0 else "⏸️"
         st.markdown(f"### {arrow} ${current:.2f}   (Day: {day_pct:+.2f}%, Candle: {real_pct:+.2f}%)")
 
-        # CHARTS
         st.plotly_chart(plot_candlestick(df.tail(lookback)), use_container_width=True)
         st.line_chart(df[["Close","RSI"]].tail(lookback))
 
-        # PATTERNS & GRADE
         patterns, vol_spike, grade = analyze_candles(df, lookback)
         st.markdown("## 🕯️ Candlestick Patterns")
         if patterns:
@@ -218,7 +226,6 @@ while True:
         st.write(f"🔊 Volume spike: {'💥 Yes' if vol_spike else 'No'}")
         st.write(f"🌟 Trader Grade: **{grade}**")
 
-        # INDICATORS & TRADE LOGIC
         last_rsi         = df["RSI"].dropna().iloc[-1]
         last_macd        = df["MACD"].dropna().iloc[-1]
         last_macd_signal = df["MACD_signal"].dropna().iloc[-1]
@@ -233,29 +240,27 @@ while True:
         checks = []
         bull_score = 0
         if last_rsi < 30:
-            bull_score += 1; checks.append("✔️ RSI oversold")
+            bull_score +=1; checks.append("✔️ RSI oversold")
         else:
             checks.append("❌ RSI not oversold")
         if last_macd > last_macd_signal:
-            bull_score += 1; checks.append("✔️ MACD bullish")
+            bull_score +=1; checks.append("✔️ MACD bullish")
         else:
             checks.append("❌ MACD not bullish")
         if ema_9 > ema_21:
-            bull_score += 1; checks.append("✔️ EMA bullish")
+            bull_score +=1; checks.append("✔️ EMA bullish")
         else:
             checks.append("❌ EMA not bullish")
 
         confidence = int((bull_score/3)*100)
 
-        # BUY logic with ATR stops/targets + multi-TF
         if bull_score >= 2:
             signal = "🟢 Buy"
             entry = current
             stop_loss   = entry - 1.5 * atr
             take_profit = entry + 3.0 * atr
             risk_ps     = entry - stop_loss
-            qty = max(int(100 / risk_ps),1)
-
+            qty         = max(int(100/risk_ps),1)
             if not confirmed_on_higher_tf(ticker, patterns, lookback):
                 st.info("↔️ 15m TF not confirming — skipping alert")
             else:
@@ -267,9 +272,8 @@ while True:
                     f" • Patterns: {', '.join(patterns) or 'None'}  TF: {interval}"
                 )
                 send_discord_alert(msg)
+                journal_trade(signal, ticker, entry, stop_loss, take_profit, patterns, interval, confidence)
                 last_trade_signal = signal
-
-        # SELL logic with ATR stops/targets + multi-TF
         else:
             bear_score = 0; checks=[]
             if last_rsi > 70:
@@ -284,19 +288,18 @@ while True:
                 bear_score +=1; checks.append("✔️ EMA bearish")
             else:
                 checks.append("❌ EMA not bearish")
-
+            confidence = int((bear_score/3)*100)
             if bear_score >= 2:
                 signal = "🔴 Sell"
                 entry = current
                 stop_loss   = entry + 1.5 * atr
                 take_profit = entry - 3.0 * atr
                 risk_ps     = stop_loss - entry
-                qty = max(int(100 / risk_ps),1)
-
+                qty         = max(int(100/risk_ps),1)
                 if not confirmed_on_higher_tf(ticker, patterns, lookback):
                     st.info("↔️ 15m TF not confirming — skipping alert")
                 else:
-                    st.warning(f"{signal} — {bear_score}/3. Confidence: {confidence}%")
+                    st.warning(f"{signal} — {bear_score}/3 match. Confidence: {confidence}%")
                     msg = (
                         f"🔴 *SELL* `{ticker}` @ ${entry:.2f}\n"
                         f" • SL: ${stop_loss:.2f}  TP: ${take_profit:.2f}\n"
@@ -304,6 +307,7 @@ while True:
                         f" • Patterns: {', '.join(patterns) or 'None'}  TF: {interval}"
                     )
                     send_discord_alert(msg)
+                    journal_trade(signal, ticker, entry, stop_loss, take_profit, patterns, interval, confidence)
                     last_trade_signal = signal
             else:
                 signal = "⚪ Hold"
@@ -313,7 +317,6 @@ while True:
         for c in checks:
             st.write(c)
 
-        # SIDEBAR: Volatility & News...
         vol = df["Close"].pct_change().tail(lookback).std()*100
         vol_level = "🔴 High" if vol>1.5 else "🟡 Medium" if vol>0.5 else "🟢 Low"
         st.sidebar.markdown("### 🧠 Trade Summary")
