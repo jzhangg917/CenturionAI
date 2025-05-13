@@ -3,6 +3,9 @@ import time
 import json
 import threading
 import os
+import numpy as np
+# re-introduce the old NaN alias so pandas_ta.squeeze_pro can import it
+np.NaN = np.nan
 
 import streamlit as st  # type: ignore
 from streamlit_autorefresh import st_autorefresh  # type: ignore
