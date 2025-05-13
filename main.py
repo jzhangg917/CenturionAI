@@ -9,7 +9,7 @@ from streamlit_autorefresh import st_autorefresh  # type: ignore
 import yfinance as yf  # type: ignore
 import pandas as pd  # type: ignore
 import pandas_ta as ta  # type: ignore
-from pandas_ta.candles import (
+from pandas_ta.candles import (  # type: ignore
     cdl_hammer,
     cdl_shooting_star,
     cdl_engulfing,
