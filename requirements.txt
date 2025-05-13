@@ -1,4 +1,4 @@
-numpy==1.25.3       # last release that still provides numpy.NaN
+numpy<1.26
 pandas==2.2.3
 pandas-ta==0.3.14b0
 streamlit
