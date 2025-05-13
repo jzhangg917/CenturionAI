@@ -1,0 +1,10 @@
+{
+  "ticker": "TSLA",
+  "signal": "HOLD",
+  "confidence": 33,
+  "price": 333.93,
+  "timestamp": "2025-05-13T18:50:37.078101-04:00",
+  "logic": [
+    "MACD bullish"
+  ]
+}
