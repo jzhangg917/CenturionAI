@@ -9,14 +9,6 @@ from streamlit_autorefresh import st_autorefresh  # type: ignore
 import yfinance as yf  # type: ignore
 import pandas as pd  # type: ignore
 import pandas_ta as ta  # type: ignore
-from pandas_ta.candles import (  # type: ignore
-    cdl_hammer,
-    cdl_shooting_star,
-    cdl_engulfing,
-    cdl_doji,
-    cdl_morning_star,
-    cdl_evening_star,
-)
 import requests  # type: ignore
 import plotly.graph_objects as go  # type: ignore
 from textblob import TextBlob  # type: ignore
@@ -41,8 +33,15 @@ FINNHUB_WS          = f"wss://ws.finnhub.io?token={FINNHUB_API_KEY}"
 NEWS_API_KEY        = "aa0de5faf38c418bb294c12ac5559726"
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1369524379959955497/60qtH7hFrkT107Vol5gP4IOwzdYiYJ7KD_EVPxLcBx6bJNedfacpcbtpAMtPLrikCiM4"
 JOURNAL_FILE        = "trade_journal.txt"
-POSITIVE_KEYWORDS   = ["beat estimates", "record revenue", "surges", "acquisition", "partnership", "upgrade", "strong guidance", "expands"]
-NEGATIVE_KEYWORDS   = ["missed estimates", "downgrade", "layoffs", "recall", "plunges", "investigation", "lawsuit", "weak demand"]
+
+POSITIVE_KEYWORDS   = [
+    "beat estimates","record revenue","surges","acquisition",
+    "partnership","upgrade","strong guidance","expands"
+]
+NEGATIVE_KEYWORDS   = [
+    "missed estimates","downgrade","layoffs","recall",
+    "plunges","investigation","lawsuit","weak demand"
+]
 
 # === WebSocket Callbacks ===
 def on_message(ws, message):
@@ -96,27 +95,26 @@ def fetch_news(ticker):
         return []
     scored = []
     for a in arts:
-        h = a.get("title", "")
-        s = a.get("source", {}).get("name", "")
+        h = a.get("title","")
+        s = a.get("source",{}).get("name","")
         lower = h.lower()
         score = TextBlob(h).sentiment.polarity
         for kw in POSITIVE_KEYWORDS:
-            if kw in lower:
-                score += 0.3
+            if kw in lower: score += 0.3
         for kw in NEGATIVE_KEYWORDS:
-            if kw in lower:
-                score -= 0.3
-        if abs(score) < 0.1:
-            continue
-        sentiment_label = "🟢 Positive" if score > 0.1 else "🔴 Negative"
+            if kw in lower: score -= 0.3
+        if abs(score) < 0.1: continue
+        lbl = "🟢 Positive" if score>0.1 else "🔴 Negative"
         summary = "Relevant event."
         if "beat" in lower or "record" in lower:
-            summary = "Earnings beat/outpaced expectations."
+            summary = "Earnings beat expectations."
         elif "missed" in lower or "downgrade" in lower:
-            summary = "Earnings miss/negative revision."
-        scored.append(
-            {"headline": h, "source": s, "sentiment": sentiment_label, "score": score, "summary": summary}
-        )
+            summary = "Earnings miss or downgrade."
+        scored.append({
+            "headline": h, "source": s,
+            "sentiment": lbl, "score": score,
+            "summary": summary
+        })
     seen, out = set(), []
     for art in scored:
         k = art["headline"].strip().lower()
@@ -127,10 +125,10 @@ def fetch_news(ticker):
     return out[:5]
 
 def fetch_data(ticker, interval, lookback):
-    imap = {"1m": 1, "5m": 5, "15m": 15, "1h": 60, "1d": 1440}
+    imap = {"1m":1,"5m":5,"15m":15,"1h":60,"1d":1440}
     buf = 60
     minutes = (lookback + buf) * imap[interval]
-    days = max(1, minutes // 1440 + 1)
+    days = max(1, minutes//1440 + 1)
     try:
         df = yf.download(ticker, period=f"{days}d", interval=interval, progress=False)
     except:
@@ -146,39 +144,33 @@ def fetch_data(ticker, interval, lookback):
         df["MACD"], df["MACD_signal"] = macd["MACD_12_26_9"], macd["MACDs_12_26_9"]
     else:
         df["MACD"], df["MACD_signal"] = None, None
-    df["EMA_9"] = ta.ema(df["Close"], length=9)
+    df["EMA_9"]  = ta.ema(df["Close"], length=9)
     df["EMA_21"] = ta.ema(df["Close"], length=21)
-    df["ATR"] = ta.atr(df["High"], df["Low"], df["Close"], length=14)
+    df["ATR"]    = ta.atr(df["High"], df["Low"], df["Close"], length=14)
     return df
 
 def plot_candlestick(df):
-    fig = go.Figure(
-        data=[
-            go.Candlestick(
-                x=df.index, open=df["Open"], high=df["High"], low=df["Low"], close=df["Close"]
-            )
-        ]
-    )
+    fig = go.Figure(data=[go.Candlestick(
+        x=df.index, open=df["Open"], high=df["High"],
+        low=df["Low"], close=df["Close"]
+    )])
     fig.update_layout(
-        xaxis_title="Time",
-        yaxis_title="Price",
-        xaxis_rangeslider_visible=False,
-        template="plotly_dark",
-        height=500,
-        margin=dict(l=10, r=10, t=40, b=10),
-        xaxis=dict(type="date", tickformat="%I:%M %p"),
+        xaxis_title="Time", yaxis_title="Price",
+        xaxis_rangeslider_visible=False, template="plotly_dark",
+        height=500, margin=dict(l=10,r=10,t=40,b=10),
+        xaxis=dict(type="date", tickformat="%I:%M %p")
     )
     return fig
 
 def analyze_candles(df, lookback=30):
-    """Return list of patterns, volume spike flag, and a simple grade."""
+    """Return patterns, volume spike flag, and a simple grade."""
     vals = {
-        "Hammer":            cdl_hammer(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
-        "Shooting Star":     cdl_shooting_star(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
-        "Bullish Engulfing": cdl_engulfing(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
-        "Doji":              cdl_doji(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
-        "Morning Star":      cdl_morning_star(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
-        "Evening Star":      cdl_evening_star(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
+        "Hammer":            ta.cdl_hammer(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
+        "Shooting Star":     ta.cdl_shooting_star(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
+        "Bullish Engulfing": ta.cdl_engulfing(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
+        "Doji":              ta.cdl_doji(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
+        "Morning Star":      ta.cdl_morning_star(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
+        "Evening Star":      ta.cdl_evening_star(df["Open"], df["High"], df["Low"], df["Close"]).iloc[-1],
     }
     patterns = []
     for name, v in vals.items():
@@ -189,14 +181,13 @@ def analyze_candles(df, lookback=30):
     avg_vol = df["Volume"].tail(lookback).mean()
     vol_spike = df["Volume"].iloc[-1] > avg_vol * 1.5
     score = len(patterns) + (1 if vol_spike else 0)
-    grade = {0: "C", 1: "B", 2: "A", 3: "A+"}.get(min(score, 3), "C")
+    grade = {0:"C",1:"B",2:"A",3:"A+"}.get(min(score,3),"C")
     return patterns, vol_spike, grade
 
 def confirmed_on_higher_tf(ticker, patterns, lookback):
-    df15 = fetch_data(ticker, "15m", lookback * 3)
-    if df15 is None:
-        return False
-    pats15, _, _ = analyze_candles(df15, lookback * 3)
+    df15 = fetch_data(ticker, "15m", lookback*3)
+    if df15 is None: return False
+    pats15,_,_ = analyze_candles(df15, lookback*3)
     return any(p in pats15 for p in patterns)
 
 # === Sidebar Inputs ===
@@ -210,6 +201,7 @@ if ws_thread is None:
     ws_thread = threading.Thread(target=run_ws, daemon=True)
     ws_thread.start()
 
+# === Header & Timestamp ===
 eastern = pytz.timezone("America/New_York")
 now     = datetime.now(eastern).strftime("%I:%M:%S %p %Z")
 build   = datetime.now(eastern).strftime("%Y-%m-%d %I:%M:%S %p")
@@ -219,36 +211,31 @@ st.markdown(f"<p style='text-align:right;color:gray;'>🛠️ Last build: {build
 
 placeholder = st.empty()
 
+# === Main Loop ===
 while True:
     df = fetch_data(ticker, interval, lookback)
     if df is None:
         st.error("❌ Invalid ticker or no data.")
-        time.sleep(30)
-        continue
+        time.sleep(30); continue
     if df["MACD"].isna().all():
-        st.warning("⚠️ Not enough data for MACD.")
-        time.sleep(60)
-        continue
+        st.warning("⚠️ Not enough data for MACD."); time.sleep(60); continue
 
     with placeholder.container():
         # Live price + % moves
         current    = LIVE_PRICE or df["Close"].iloc[-1]
         latest     = df["Close"].iloc[-1]
         real_ch    = current - latest
-        real_pct   = (real_ch / latest) * 100
+        real_pct   = (real_ch/latest)*100
         prev_close = yf.Ticker(ticker).info.get("previousClose", latest)
-        day_pct    = (current - prev_close) / prev_close * 100
-        arrow      = "🔺" if real_ch > 0 else "🔻" if real_ch < 0 else "⏸️"
-        st.markdown(
-            f"### {arrow} ${current:.2f}   "
-            f"(Day: {day_pct:+.2f}%, Candle: {real_pct:+.2f}%)"
-        )
+        day_pct    = (current-prev_close)/prev_close*100
+        arrow      = "🔺" if real_ch>0 else "🔻" if real_ch<0 else "⏸️"
+        st.markdown(f"### {arrow} ${current:.2f}   (Day: {day_pct:+.2f}%, Candle: {real_pct:+.2f}%)")
 
         # Charts
         st.plotly_chart(plot_candlestick(df.tail(lookback)), use_container_width=True)
         st.line_chart(df[["Close","RSI"]].tail(lookback))
 
-        # Pattern analysis
+        # Candlestick Patterns
         patterns, vol_spike, grade = analyze_candles(df, lookback)
         st.markdown("## 🕯️ Candlestick Patterns")
         if patterns:
@@ -270,7 +257,7 @@ while True:
         st.write(f"EMA 9: **{ema_9:.2f}**, EMA 21: **{ema_21:.2f}**")
         st.write(f"ATR: **{atr:.2f}**")
 
-        # Trade logic with ATR stops/targets & journaling
+        # Trade logic + journaling
         checks = []
         bull_score = 0
         if last_rsi < 30:
@@ -286,7 +273,7 @@ while True:
         else:
             checks.append("❌ EMA not bullish")
 
-        confidence = int((bull_score / 3) * 100)
+        confidence = int((bull_score/3)*100)
 
         if bull_score >= 2:
             signal = "🟢 Buy"
@@ -323,7 +310,7 @@ while True:
                 bear_score += 1; checks.append("✔️ EMA bearish")
             else:
                 checks.append("❌ EMA not bearish")
-            confidence = int((bear_score / 3) * 100)
+            confidence = int((bear_score/3)*100)
 
             if bear_score >= 2:
                 signal = "🔴 Sell"
