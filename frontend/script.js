@@ -6,104 +6,113 @@ document.getElementById("tickerInput").addEventListener("keypress", (e) => {
 let chart = null;
 
 async function fetchSignal() {
-    const ticker = document.getElementById("tickerInput").value.toUpperCase().trim();
-    if (!ticker) return;
-  
-    try {
-      const res = await fetch(`/run?ticker=${ticker}`);
-      if (!res.ok) throw new Error("Ticker not found or backend error");
-  
-      const data = await res.json();
-  
-      // Clear errors
-      document.getElementById("error").innerText = "";
-  
-      // Display signal details
-      document.getElementById("ticker").innerText = data.ticker;
-  
-      const signalSpan = document.getElementById("signal");
-      signalSpan.className = "badge"; // reset classes
-      if (data.signal === "BUY") {
-        signalSpan.textContent = "🟢 BUY";
-        signalSpan.classList.add("buy");
-      } else if (data.signal === "SELL") {
-        signalSpan.textContent = "🔴 SELL";
-        signalSpan.classList.add("sell");
-      } else {
-        signalSpan.textContent = "🟡 HOLD";
-        signalSpan.classList.add("hold");
-      }
-  
-      document.getElementById("confidence").innerText = `${data.confidence}%`;
-      document.getElementById("price").innerText = `$${data.price}`;
-      document.getElementById("timestamp").setAttribute("data-time", data.timestamp);
-      document.getElementById("timestamp").innerText = formatTimeAgo(data.timestamp);
-  
-      // Logic bullets
-      const logicList = document.getElementById("logic");
-      logicList.innerHTML = "";
-      data.logic.forEach(rule => {
-        const li = document.createElement("li");
-        li.textContent = rule;
-        logicList.appendChild(li);
-      });
-  
-      // Entry Signal & Pattern Stack
-      document.getElementById("entry_signal").innerText = data.entry_signal || "N/A";
-      document.getElementById("pattern_stack").innerText = data.pattern_stack?.join(", ") || "None";
-  
-      // Company logo
-      fetchLogo(ticker);
-  
-      // Chart rendering
-      if (data.history && Array.isArray(data.history)) {
-        const ctx = document.getElementById("priceChart").getContext("2d");
-        const labels = data.history.map((_, i) => `T-${data.history.length - i}`);
-        const prices = data.history;
-  
-        if (chart) chart.destroy();
-  
-        chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: `${ticker} Price`,
-              data: prices,
-              borderColor: '#00b894',
-              backgroundColor: 'rgba(0,184,148,0.1)',
-              tension: 0.3,
-            }]
-          },
-          options: {
-            scales: {
-              x: { display: false },
-              y: { beginAtZero: false }
-            },
-            plugins: {
-              legend: {
-                display: false
-              }
-            }
-          }
-        });
-      }
-  
-    } catch (err) {
-      console.error("Backend error", err);
-      document.getElementById("error").innerText = err.message;
-  
-      ["ticker", "signal", "confidence", "price", "timestamp", "entry_signal", "pattern_stack"].forEach(id => {
-        document.getElementById(id).innerText = "";
-      });
-  
-      document.getElementById("logic").innerHTML = "";
-      document.getElementById("logo").style.display = "none";
-      if (chart) chart.destroy();
-    }
-  }  
+  const ticker = document.getElementById("tickerInput").value.toUpperCase().trim();
+  if (!ticker) return;
 
-// ✅ Live-updating timestamp
+  try {
+    const res = await fetch(`/run?ticker=${ticker}`);
+    if (!res.ok) throw new Error("Ticker not found or backend error");
+
+    const data = await res.json();
+    document.getElementById("error").innerText = "";
+    document.getElementById("ticker").innerText = data.ticker;
+
+    const signalSpan = document.getElementById("signal");
+    signalSpan.className = "badge";
+    signalSpan.textContent = data.signal === "BUY" ? "🟢 BUY"
+                         : data.signal === "SELL" ? "🔴 SELL"
+                         : "🟡 HOLD";
+    signalSpan.classList.add(data.signal.toLowerCase());
+
+    document.getElementById("confidence").innerText = `${data.confidence}%`;
+    document.getElementById("price").innerText = `$${data.price}`;
+    document.getElementById("timestamp").setAttribute("data-time", data.timestamp);
+    document.getElementById("timestamp").innerText = formatTimeAgo(data.timestamp);
+
+    const logicList = document.getElementById("logic");
+    logicList.innerHTML = "";
+    data.logic.forEach(rule => {
+      const li = document.createElement("li");
+      li.textContent = rule;
+      logicList.appendChild(li);
+    });
+
+    document.getElementById("entry_signal").innerText = data.entry_signal || "N/A";
+    document.getElementById("pattern_stack").innerText = data.pattern_stack?.join(", ") || "None";
+
+    const candles = data.history
+      .filter(d =>
+        typeof d.t === "string" &&
+        typeof d.o === "number" &&
+        typeof d.h === "number" &&
+        typeof d.l === "number" &&
+        typeof d.c === "number"
+      )
+      .map(d => ({
+        x: new Date(d.t).toISOString(),
+        o: d.o,
+        h: d.h,
+        l: d.l,
+        c: d.c
+      }));
+
+    if (candles.length === 0) throw new Error("No valid candle data");
+
+    const ctx = document.getElementById("priceChart").getContext("2d");
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: 'candlestick',
+      data: {
+        datasets: [{
+          label: `${data.ticker} Candles`,
+          data: candles,
+          color: {
+            up: '#26a69a',
+            down: '#ef5350',
+            unchanged: '#999'
+          }
+        }]
+      },
+      options: {
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              tooltipFormat: 'hh:mm a',
+              displayFormats: {
+                hour: 'hh:mm a',
+                minute: 'hh:mm a'
+              }
+            },
+            ticks: {
+              source: 'auto',
+              autoSkip: true
+            }
+          },
+          y: {
+            beginAtZero: false
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Error rendering chart:", err);
+    document.getElementById("error").innerText = err.message;
+    ["ticker", "signal", "confidence", "price", "timestamp", "entry_signal", "pattern_stack"].forEach(id => {
+      document.getElementById(id).innerText = "";
+    });
+    document.getElementById("logic").innerHTML = "";
+    if (chart) chart.destroy();
+  }
+}
+
 setInterval(() => {
   const el = document.getElementById("timestamp");
   const ts = el.getAttribute("data-time");
@@ -118,19 +127,3 @@ function formatTimeAgo(timestamp) {
   if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
   return then.toLocaleString();
 }
-
-async function fetchLogo(ticker) {
-    const logo = document.getElementById("logo");
-    logo.style.display = "none";
-  
-    try {
-      const res = await fetch(`/logo?ticker=${ticker}`);
-      const data = await res.json();
-      if (data.logo_url) {
-        logo.src = data.logo_url;
-        logo.style.display = "inline-block";
-      }
-    } catch (err) {
-      console.warn("Logo fetch failed", err);
-    }
-  }  
