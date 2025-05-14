@@ -6,22 +6,29 @@
   <title>NeuroTraderAI Bot Signal</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="https://emojiapi.dev/api/v1/brain/64.png" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="container">
     <div id="signal-box" class="card">
       <h1 class="title">🧠 NeuroTraderAI Signal</h1>
       <div class="input-row">
-        <input id="tickerInput" placeholder="Enter Ticker" />
+        <input id="tickerInput" placeholder="Enter Ticker (e.g. TSLA, AAPL)" />
         <button id="loadBtn">Load</button>
       </div>
       <div id="error" class="error-msg"></div>
+      <div class="logo-row">
+        <img id="logo" src="" alt="" style="height: 32px; display: none;" />
+      </div>
       <div class="signal-line"><strong>Ticker:</strong> <span id="ticker"></span></div>
       <div class="signal-line"><strong>Signal:</strong> <span id="signal" class="badge"></span></div>
       <div class="signal-line"><strong>Confidence:</strong> <span id="confidence"></span></div>
       <div class="signal-line"><strong>Price:</strong> <span id="price"></span></div>
       <div class="signal-line"><strong>Updated:</strong> <span id="timestamp"></span></div>
       <div class="signal-line"><strong>Logic:</strong><ul id="logic"></ul></div>
+      <div class="signal-line"><strong>Entry Signal:</strong> <span id="entry_signal"></span></div>
+      <div class="signal-line"><strong>Patterns:</strong> <span id="pattern_stack"></span></div>
+      <canvas id="priceChart" width="400" height="200"></canvas>
     </div>
   </div>
 
