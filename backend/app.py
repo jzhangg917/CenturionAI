@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify, send_from_directory # type: ignore
+from flask import Flask, request, jsonify, send_from_directory  # type: ignore
 from backend_utils import fetch_data, analyze, save_outputs
 import os
-import requests # type: ignore
+import requests  # type: ignore
+from datetime import datetime
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
 
@@ -51,12 +52,23 @@ def run_signal():
     if not sig:
         return jsonify({"error": "Failed to compute indicators"}), 500
 
-    # Add history (last 60 closing prices)
-    sig["history"] = df["Close"].dropna().tail(60).round(2).tolist()
+    # Add OHLC history (for candlestick chart)
+    df_tail = df.dropna().tail(60)
+
+    ohlc_history = []
+    for i, row in df_tail.iterrows():
+        candle = {
+            "t": i.strftime('%Y-%m-%dT%H:%M:%SZ') if isinstance(i, datetime) else str(i),
+            "o": round(row["Open"], 2),
+            "h": round(row["High"], 2),
+            "l": round(row["Low"], 2),
+            "c": round(row["Close"], 2)
+        }
+        ohlc_history.append(candle)
+
+    sig["history"] = ohlc_history
 
     return jsonify(sig)
-
-
 
 if __name__ == "__main__":
     app.run(debug=True, port=3000)

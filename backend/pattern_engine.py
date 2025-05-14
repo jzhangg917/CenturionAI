@@ -1,4 +1,4 @@
-import pandas as pd
+# backend/pattern_engine.py
 
 def detect_swing_highs_lows(df, lookback=3):
     highs, lows = [], []
@@ -20,18 +20,21 @@ def detect_liquidity_sweep(df, swing_highs, swing_lows, threshold=0.1):
     swept_lows = [l for l in recent_lows if last_low < l * (1 - threshold/100)]
 
     if swept_highs:
-        return "Sell-side Liquidity Sweep"
+        level = max(swept_highs)
+        return "Sell-side Liquidity Sweep", level
     elif swept_lows:
-        return "Buy-side Liquidity Sweep"
-    else:
-        return None
+        level = min(swept_lows)
+        return "Buy-side Liquidity Sweep", level
+    return None, None
 
 def detect_bos(df, structure_len=10):
     recent_closes = df["Close"].tail(structure_len).tolist()
     trend = "up" if recent_closes[-1] > recent_closes[0] else "down"
 
     if trend == "up" and recent_closes[-1] < min(recent_closes[:-2]):
-        return "Break of Structure (Down)"
+        bos_level = min(recent_closes[:-2])
+        return "Break of Structure (Down)", bos_level
     elif trend == "down" and recent_closes[-1] > max(recent_closes[:-2]):
-        return "Break of Structure (Up)"
-    return None
+        bos_level = max(recent_closes[:-2])
+        return "Break of Structure (Up)", bos_level
+    return None, None

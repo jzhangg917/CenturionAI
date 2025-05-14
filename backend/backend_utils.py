@@ -48,52 +48,65 @@ def analyze(df, ticker):
 
     score = 0
     logic = []
-
-    if rsi < 30:
-        score += 1
-        logic.append("RSI oversold")
-    if macd > macd_sig:
-        score += 1
-        logic.append("MACD bullish")
-    if ema_9 > ema_21:
-        score += 1
-        logic.append("EMA bullish")
+    if rsi < 30: score += 1; logic.append("RSI oversold")
+    if macd > macd_sig: score += 1; logic.append("MACD bullish")
+    if ema_9 > ema_21: score += 1; logic.append("EMA bullish")
 
     base_confidence = int((score / 3) * 100)
     base_signal = "BUY" if score >= 2 else "HOLD"
 
-    # === SMART MONEY PATTERN STACK ===
     highs, lows = detect_swing_highs_lows(df)
-    sweep = detect_liquidity_sweep(df, highs, lows)
-    bos = detect_bos(df)
+    sweep, sweep_level = detect_liquidity_sweep(df, highs, lows)
+    bos, bos_level = detect_bos(df)
 
     pattern_stack = []
-    if sweep:
-        pattern_stack.append(sweep)
-    if bos:
-        pattern_stack.append(bos)
+    if sweep: pattern_stack.append(sweep)
+    if bos: pattern_stack.append(bos)
 
-    # Entry decision
-    if "Buy-side" in (sweep or "") or "Up" in (bos or ""):
-        entry_signal = "BUY"
-    elif "Sell-side" in (sweep or "") or "Down" in (bos or ""):
-        entry_signal = "SELL"
-    else:
-        entry_signal = "WAIT"
+    entry_signal = "WAIT"
+    entry_price = stop_loss = take_profit = None
 
-    stacked_confidence = 80 if len(pattern_stack) == 2 else 50 if pattern_stack else 0
+    if sweep or bos:
+        # Entry logic
+        if "Buy-side" in (sweep or "") and "Up" in (bos or ""):
+            entry_signal = "BUY"
+            entry_price = round(bos_level + 0.1, 2)
+            stop_loss = round(sweep_level - 0.15, 2)
+            take_profit = round(entry_price + 2 * (entry_price - stop_loss), 2)
 
+        elif "Sell-side" in (sweep or "") and "Down" in (bos or ""):
+            entry_signal = "SELL"
+            entry_price = round(bos_level - 0.1, 2)
+            stop_loss = round(sweep_level + 0.15, 2)
+            take_profit = round(entry_price - 2 * (stop_loss - entry_price), 2)
+
+    stacked_conf = 90 if entry_signal in ["BUY", "SELL"] else 50 if pattern_stack else 0
     ts = datetime.now(pytz.timezone(TIMEZONE)).isoformat()
+
+    history = []
+    df_subset = df.tail(60)
+    for i, row in df_subset.iterrows():
+        history.append({
+            "t": row.name.strftime("%Y-%m-%d %H:%M:%S"),
+            "o": round(row["Open"], 2),
+            "h": round(row["High"], 2),
+            "l": round(row["Low"], 2),
+            "c": round(row["Close"], 2)
+        })
 
     return {
         "ticker": ticker,
         "signal": base_signal,
-        "confidence": max(base_confidence, stacked_confidence),
+        "confidence": max(base_confidence, stacked_conf),
         "price": round(price, 2),
         "timestamp": ts,
         "logic": logic,
         "entry_signal": entry_signal,
-        "pattern_stack": pattern_stack
+        "pattern_stack": pattern_stack,
+        "entry_price": entry_price,
+        "stop_loss": stop_loss,
+        "take_profit": take_profit,
+        "history": history
     }
 
 def save_outputs(ticker, sig):
