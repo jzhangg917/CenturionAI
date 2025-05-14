@@ -19,111 +19,108 @@ async function fetchSignal() {
 
     const signalSpan = document.getElementById("signal");
     signalSpan.className = "badge";
-    signalSpan.textContent = data.signal === "BUY" ? "🟢 BUY"
-                         : data.signal === "SELL" ? "🔴 SELL"
-                         : "🟡 HOLD";
-    signalSpan.classList.add(data.signal.toLowerCase());
+    if (data.signal === "BUY") {
+      signalSpan.textContent = "🟢 BUY";
+      signalSpan.classList.add("buy");
+    } else if (data.signal === "SELL") {
+      signalSpan.textContent = "🔴 SELL";
+      signalSpan.classList.add("sell");
+    } else {
+      signalSpan.textContent = "⚪️ WAIT";
+      signalSpan.classList.add("wait");
+    }
 
-    document.getElementById("confidence").innerText = `${data.confidence}%`;
+    document.getElementById("confidence").innerText = data.confidence + "%";
     document.getElementById("price").innerText = `$${data.price}`;
-    document.getElementById("timestamp").setAttribute("data-time", data.timestamp);
-    document.getElementById("timestamp").innerText = formatTimeAgo(data.timestamp);
+    document.getElementById("updated").innerText = "Just now";
+    document.getElementById("entrySignal").innerText = data.entry_signal || "N/A";
+    document.getElementById("patternStack").innerText = data.pattern_stack || "None";
 
-    const logicList = document.getElementById("logic");
+    // Logic list
+    const logicList = document.getElementById("logicList");
     logicList.innerHTML = "";
-    data.logic.forEach(rule => {
+    (data.logic || []).forEach(item => {
       const li = document.createElement("li");
-      li.textContent = rule;
+      li.textContent = item;
       logicList.appendChild(li);
     });
 
-    document.getElementById("entry_signal").innerText = data.entry_signal || "N/A";
-    document.getElementById("pattern_stack").innerText = data.pattern_stack?.join(", ") || "None";
+    // Convert time to Unix timestamp (milliseconds)
+    const candles = data.candles.map(d => ({
+      x: new Date(d.t).getTime(),
+      o: d.o,
+      h: d.h,
+      l: d.l,
+      c: d.c
+    }));
 
-    const candles = data.history
-      .filter(d =>
-        typeof d.t === "string" &&
-        typeof d.o === "number" &&
-        typeof d.h === "number" &&
-        typeof d.l === "number" &&
-        typeof d.c === "number"
-      )
-      .map(d => ({
-        x: new Date(d.t).toISOString(),
-        o: d.o,
-        h: d.h,
-        l: d.l,
-        c: d.c
-      }));
+    // Debug log
+    console.log("Final candles:", candles);
+    console.log("Sample candle:", candles[0]);
 
-    if (candles.length === 0) throw new Error("No valid candle data");
-
-    const ctx = document.getElementById("priceChart").getContext("2d");
     if (chart) chart.destroy();
 
+    const ctx = document.getElementById("chart").getContext("2d");
     chart = new Chart(ctx, {
       type: 'candlestick',
       data: {
         datasets: [{
-          label: `${data.ticker} Candles`,
-          data: candles,
-          color: {
-            up: '#26a69a',
-            down: '#ef5350',
-            unchanged: '#999'
-          }
+          label: `${ticker} Candlestick`,
+          data: candles
         }]
       },
       options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                label: context => {
+                    const o = context.raw.o;
+                    const h = context.raw.h;
+                    const l = context.raw.l;
+                    const c = context.raw.c;
+                    return `O: ${o}  H: ${h}  L: ${l}  C: ${c}`;
+                },
+                title: (ctx) => {
+                    try {
+                    const ts = ctx[0].parsed.x;
+                    return luxon.DateTime.fromMillis(ts).toFormat("MMM dd yyyy HH:mm");
+                    } catch (e) {
+                    console.warn("Tooltip timestamp parse fail:", e);
+                    return "Unknown Time";
+                    }
+                }
+                }
+            }
+        },
         scales: {
           x: {
             type: 'time',
             time: {
-              tooltipFormat: 'hh:mm a',
-              displayFormats: {
-                hour: 'hh:mm a',
-                minute: 'hh:mm a'
+              parser: 'x',
+              tooltipFormat: 'MMM dd, yyyy HH:mm'
+            },
+            adapters: {
+              date: {
+                zone: 'local',
               }
             },
             ticks: {
-              source: 'auto',
-              autoSkip: true
+              source: 'auto'
             }
           },
           y: {
             beginAtZero: false
-          }
-        },
-        plugins: {
-          legend: {
-            display: false
           }
         }
       }
     });
 
   } catch (err) {
-    console.error("❌ Error rendering chart:", err);
+    console.error(err);
     document.getElementById("error").innerText = err.message;
-    ["ticker", "signal", "confidence", "price", "timestamp", "entry_signal", "pattern_stack"].forEach(id => {
-      document.getElementById(id).innerText = "";
-    });
-    document.getElementById("logic").innerHTML = "";
-    if (chart) chart.destroy();
   }
-}
-
-setInterval(() => {
-  const el = document.getElementById("timestamp");
-  const ts = el.getAttribute("data-time");
-  if (ts) el.innerText = formatTimeAgo(ts);
-}, 60000);
-
-function formatTimeAgo(timestamp) {
-  const then = new Date(timestamp);
-  const now = new Date();
-  const diff = Math.floor((now - then) / 1000);
-  if (diff < 60) return "Just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
-  return then.toLocaleString();
 }

@@ -1,92 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NeuroTraderAI Signal</title>
-
-  <!-- ✅ Chart.js v3.9.1 -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-
-  <!-- ✅ Financial Plugin -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.1.1/dist/chartjs-chart-financial.min.js"></script>
-
-  <!-- ✅ Luxon + Adapter (confirmed working) -->
-  <script src="https://cdn.jsdelivr.net/npm/luxon@2.5.0/build/global/luxon.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Stock Signal Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Chart.js and Financial Chart Plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+  <!-- Luxon for time handling -->
+  <script src="https://cdn.jsdelivr.net/npm/luxon@1.26.0/build/global/luxon.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
-
   <style>
     body {
-      background: #111;
-      color: white;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
+      font-family: Arial, sans-serif;
+      margin: 20px;
     }
-    #signal-box {
-      background: #1a1a1a;
-      border-radius: 16px;
-      padding: 2rem;
-      max-width: 480px;
-      margin-bottom: 2rem;
-      width: 90%;
-    }
-    input, button {
-      padding: 0.6rem;
-      font-size: 1rem;
-      border-radius: 6px;
-      border: none;
-    }
-    button {
-      background-color: #00b894;
-      color: white;
-      cursor: pointer;
-      margin-left: 0.5rem;
-    }
-    canvas {
+    #priceChart {
       max-width: 100%;
-      background: #222;
-      border-radius: 12px;
+      height: 400px;
     }
     .badge {
-      padding: 0.2rem 0.6rem;
-      border-radius: 12px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      color: white;
       font-weight: bold;
     }
-    .buy { background-color: #00c853; }
-    .sell { background-color: #d32f2f; }
-    .hold { background-color: #fbc02d; color: black; }
-    #error {
-      color: red;
-      font-weight: bold;
-      margin-top: 1rem;
-    }
+    .buy { background-color: green; }
+    .sell { background-color: red; }
+    .hold { background-color: orange; }
   </style>
 </head>
-
 <body>
-  <div id="signal-box">
-    <h2>🧠 NeuroTraderAI Signal</h2>
-    <div style="display: flex;">
-      <input id="tickerInput" placeholder="Enter Ticker" style="flex: 1;" />
-      <button id="loadBtn">Load</button>
-    </div>
-    <div id="error"></div>
-    <p><strong>Ticker:</strong> <span id="ticker"></span></p>
-    <p><strong>Signal:</strong> <span id="signal" class="badge"></span></p>
-    <p><strong>Confidence:</strong> <span id="confidence"></span></p>
-    <p><strong>Price:</strong> <span id="price"></span></p>
-    <p><strong>Updated:</strong> <span id="timestamp"></span></p>
-    <p><strong>Logic:</strong> <ul id="logic"></ul></p>
-    <p><strong>Entry Signal:</strong> <span id="entry_signal"></span></p>
-    <p><strong>Patterns:</strong> <span id="pattern_stack"></span></p>
+  <h1>Stock Signal Viewer</h1>
+  <input type="text" id="tickerInput" placeholder="Enter Ticker Symbol" />
+  <button id="loadBtn">Load</button>
+  <p id="error" style="color: red;"></p>
+  <div>
+    <strong>Ticker:</strong> <span id="ticker"></span><br>
+    <strong>Signal:</strong> <span id="signal" class="badge"></span><br>
+    <strong>Confidence:</strong> <span id="confidence"></span><br>
+    <strong>Price:</strong> <span id="price"></span><br>
+    <strong>Last Updated:</strong> <span id="timestamp"></span><br>
+    <strong>Entry Signal:</strong> <span id="entry_signal"></span><br>
+    <strong>Pattern Stack:</strong> <span id="pattern_stack"></span><br>
   </div>
+  <h2>Logic</h2>
+  <ul id="logic"></ul>
+  <canvas id="priceChart"></canvas>
 
-  <canvas id="priceChart" height="300"></canvas>
+  <script>
+    document.getElementById("loadBtn").addEventListener("click", fetchSignal);
+    document.getElementById("tickerInput").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") fetchSignal();
+    });
 
-  <!-- Your chart logic -->
-  <script src="script.js"></script>
+    let chart = null;
+
+    async function fetchSignal() {
+      const ticker = document.getElementById("tickerInput").value.toUpperCase().trim();
+      if (!ticker) return;
+
+      try {
+        const res = await fetch(`/run?ticker=${ticker}`);
+        if (!res.ok) throw new Error("Ticker not found or backend error");
+
+        const data = await res.json();
+        document.getElementById("error").innerText = "";
+        document.getElementById("ticker").innerText = data.ticker;
+
+        const signalSpan = document.getElementById("signal");
+        signalSpan.className = "badge";
+        signalSpan.textContent = data.signal === "BUY" ? "🟢 BUY"
+                             : data.signal === "SELL" ? "🔴 SELL"
+                             : "🟡 HOLD";
+        signalSpan.classList.add(data.signal.toLowerCase());
+
+        document.getElementById("confidence").innerText = `${data.confidence}%`;
+        document.getElementById("price").innerText = `$${data.price}`;
+        document.getElementById("timestamp").setAttribute("data-time", data.timestamp);
+        document.getElementById("timestamp").innerText = formatTimeAgo(data.timestamp);
+
+        const logicList = document.getElementById("logic");
+        logicList.innerHTML = "";
+        data.logic.forEach(rule => {
+          const li = document.createElement("li");
+          li.textContent = rule;
+          logicList.appendChild(li);
+        });
+
+        document.getElementById("entry_signal").innerText = data.entry_signal || "N/A";
+        document.getElementById("pattern_stack").innerText = data.pattern_stack?.join(", ") || "None";
+
+        const candles = data.history
+          .filter(d =>
+            typeof d.t === "string" &&
+            typeof d.o === "number" &&
+            typeof d.h === "number" &&
+            typeof d.l === "number" &&
+            typeof d.c === "number"
+          )
+          .map(d => ({
+            x: new Date(d.t).getTime(), // 🔥 FIXED: use .getTime() for Luxon
+            o: d.o,
+            h: d.h,
+            l: d.l,
+            c: d.c
+          }));
+
+        if (candles.length === 0) throw new Error("No valid candle data");
+
+        const ctx = document.getElementById("priceChart").getContext("2d");
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+          type: 'candlestick',
+          data: {
+            datasets: [{
+              label: `${data.ticker} Candles`,
+              data: candles
+            }]
+          },
+          options: {
+            elements: {
+              candlestick: {
+                color: {
+                  up: '#26a69a',
+                  down: '#ef5350',
+                  unchanged: '#999'
+                }
+              }
+            },
+            scales: {
+              x: {
+                type: 'time',
+                time: {
+                  tooltipFormat: 'MMM d, yyyy h:mm a',
+                  unit: 'minute'
+                },
+                ticks: {
+                  autoSkip: true,
+                  maxRotation: 0
+                },
+                adapters: {
+                  date: {
+                    zone: 'local'
+                  }
+                }
+              },
+              y: {
+                beginAtZero: false
+              }
+            },
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => {
+                    const { o, h, l, c } = ctx.raw;
+                    return `O: ${o}  H: ${h}  L: ${l}  C: ${c}`;
+                  },
+                  title: (ctx) => {
+                    try {
+                      const ts = ctx[0].parsed.x;
+                      return luxon.DateTime.fromMillis(Number(ts)).toFormat("MMM dd yyyy HH:mm");
+                    } catch (e) {
+                      console.warn("Tooltip timestamp parse fail:", e);
+                      return "Unknown Time";
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+
+      } catch (err) {
+        console.error("❌ Error rendering chart:", err);
+        document.getElementById("error").innerText = err.message;
+        ["ticker", "signal", "confidence", "price", "timestamp", "entry_signal", "pattern_stack"].forEach(id => {
+          document.getElementById(id).innerText = "";
+        });
+        document.getElementById("logic").innerHTML = "";
+        if (chart) chart.destroy();
+      }
+    }
+
+    setInterval(() => {
+      const el = document.getElementById("timestamp");
+      const ts = el.getAttribute("data-time");
+      if (ts) el.innerText = formatTimeAgo(ts);
+    }, 60000);
+
+    function formatTimeAgo(timestamp) {
+      const then = new Date(timestamp);
+      const now = new Date();
+      const diff = Math.floor((now - then) / 1000);
+      if (diff < 60) return "Just now";
+      if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+      return then.toLocaleString();
+    }
+  </script>
 </body>
 </html>
