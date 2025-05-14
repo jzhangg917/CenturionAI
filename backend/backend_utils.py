@@ -6,6 +6,7 @@ import pandas_ta as ta # type: ignore
 from datetime import datetime
 import yfinance as yf # type: ignore
 import pytz
+from pattern_engine import detect_swing_highs_lows, detect_liquidity_sweep, detect_bos
 
 OUTPUT_DIR = "../frontend/data"
 LOOKBACK = 60
@@ -47,21 +48,52 @@ def analyze(df, ticker):
 
     score = 0
     logic = []
-    if rsi < 30: score += 1; logic.append("RSI oversold")
-    if macd > macd_sig: score += 1; logic.append("MACD bullish")
-    if ema_9 > ema_21: score += 1; logic.append("EMA bullish")
 
-    confidence = int((score / 3) * 100)
-    signal = "BUY" if score >= 2 else "HOLD"
+    if rsi < 30:
+        score += 1
+        logic.append("RSI oversold")
+    if macd > macd_sig:
+        score += 1
+        logic.append("MACD bullish")
+    if ema_9 > ema_21:
+        score += 1
+        logic.append("EMA bullish")
+
+    base_confidence = int((score / 3) * 100)
+    base_signal = "BUY" if score >= 2 else "HOLD"
+
+    # === SMART MONEY PATTERN STACK ===
+    highs, lows = detect_swing_highs_lows(df)
+    sweep = detect_liquidity_sweep(df, highs, lows)
+    bos = detect_bos(df)
+
+    pattern_stack = []
+    if sweep:
+        pattern_stack.append(sweep)
+    if bos:
+        pattern_stack.append(bos)
+
+    # Entry decision
+    if "Buy-side" in (sweep or "") or "Up" in (bos or ""):
+        entry_signal = "BUY"
+    elif "Sell-side" in (sweep or "") or "Down" in (bos or ""):
+        entry_signal = "SELL"
+    else:
+        entry_signal = "WAIT"
+
+    stacked_confidence = 80 if len(pattern_stack) == 2 else 50 if pattern_stack else 0
+
     ts = datetime.now(pytz.timezone(TIMEZONE)).isoformat()
 
     return {
         "ticker": ticker,
-        "signal": signal,
-        "confidence": confidence,
+        "signal": base_signal,
+        "confidence": max(base_confidence, stacked_confidence),
         "price": round(price, 2),
         "timestamp": ts,
-        "logic": logic
+        "logic": logic,
+        "entry_signal": entry_signal,
+        "pattern_stack": pattern_stack
     }
 
 def save_outputs(ticker, sig):
