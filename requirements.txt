@@ -1,13 +1,5 @@
-numpy>=1.26,<2.0
-pandas==2.2.3
-pandas-ta==0.3.14b0
-streamlit
-streamlit-autorefresh
+pandas
+pandas-ta
 yfinance
-plotly
-textblob
-fuzzywuzzy
-python-Levenshtein
-websocket-client
 requests
 pytz
