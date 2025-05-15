@@ -11,8 +11,9 @@
 - 📈 **Live TradingView Chart** with all the power of TradingView's UI
 - 🧠 **AI-powered trading signals** (BUY/SELL/HOLD) with confidence scores
 - 🔍 **Pattern recognition** and technical indicator analysis (RSI, MACD, EMA, candlestick patterns)
-- 🖥️ **Modern, Figma-inspired dark UI**
+- 🖥️ **Modern, Figma-inspired dark UI** with micro-animations
 - ⚡ **Fast backend** via Flask API
+- 📰 **Live Market News Sidebar** with real-time headlines for the selected ticker
 - 📤 Optional Discord alert integration
 - 💾 Signal output includes:
   - Trade signal (🟢 BUY / 🔴 SELL / 🟡 HOLD)
@@ -50,13 +51,20 @@ cd CenturionAI
 pip install -r requirements.txt
 ```
 
-### 2. Start the Backend
+### 2. Set up Finnhub API Key
+Create a file called `backend/.env` and add your Finnhub API key:
+```env
+FINNHUB_API_KEY=your_finnhub_api_key_here
+```
+(You can get a free API key at https://finnhub.io/)
+
+### 3. Start the Backend
 ```bash
 cd backend
 python app.py
 ```
 
-### 3. Start the Frontend
+### 4. Start the Frontend
 ```bash
 # From project root
 yarn global add serve  # or npm install -g serve
@@ -75,13 +83,13 @@ CenturionAI/
 │   ├── bot.py              # Core trading logic
 │   ├── backend_utils.py    # Indicator + save helpers
 │   ├── pattern_engine.py   # Pattern recognition logic
-│   └── __pycache__/        # Python cache files
+│   └── .env                # Finnhub API key (not committed)
 │
 ├── frontend/
 │   ├── index.html          # Web dashboard UI
-│   ├── script.js           # JS to fetch and render signals
+│   ├── script.js           # JS to fetch and render signals & news
 │   ├── style.css           # Dashboard styling
-│   └── screenshot.png      # UI screenshot
+│   ├── screenshot.png      # UI screenshot (shows news sidebar)
 │
 ├── requirements.txt        # Python dependencies
 └── README.md               # Project documentation
