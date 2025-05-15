@@ -1,10 +1,23 @@
 let currentInterval = "1m";
 
+// Event listeners
 document.getElementById("loadBtn").addEventListener("click", fetchSignal);
 document.getElementById("intervalSelector").addEventListener("change", fetchSignal);
 document.getElementById("tickerInput").addEventListener("keypress", (e) => {
   if (e.key === "Enter") fetchSignal();
 });
+
+// Interval mapping for TradingView
+function convertInterval(interval) {
+  const map = {
+    "1m": "1",
+    "5m": "5",
+    "15m": "15",
+    "1h": "60",
+    "1d": "D"
+  };
+  return map[interval] || "1";
+}
 
 function formatTimeAgo(timestamp) {
   const then = new Date(timestamp);
@@ -16,12 +29,12 @@ function formatTimeAgo(timestamp) {
 }
 
 function loadTradingViewWidget(ticker, interval) {
-  document.getElementById("tvchart").innerHTML = ""; // Clear previous
+  document.getElementById("tvchart").innerHTML = ""; // Clear previous chart
 
   new TradingView.widget({
     autosize: true,
     symbol: `NASDAQ:${ticker}`,
-    interval: interval,
+    interval: convertInterval(interval),
     timezone: "Etc/UTC",
     theme: "dark",
     style: "1",
@@ -82,7 +95,7 @@ async function fetchSignal() {
   }
 }
 
-// Inject TradingView script (once)
+// Load TradingView script once
 if (!window.TradingView) {
   const script = document.createElement("script");
   script.src = "https://s3.tradingview.com/tv.js";
