@@ -1,8 +1,8 @@
-# 🧠 NeuroTraderAI
+# 🦾 CenturionAI
 
 ![UI Screenshot](frontend/screenshot.png)
 
-**NeuroTraderAI** is an intelligent trading signal bot and dashboard that mimics how an elite Wall Street trader might analyze markets. It combines real-time stock data, technical indicators, and pattern recognition to generate actionable BUY/SELL/HOLD alerts — all in a beautiful, modern web interface.
+**CenturionAI** is an intelligent trading signal bot and dashboard that mimics how an elite Wall Street trader might analyze markets. It combines real-time stock data, technical indicators, and pattern recognition to generate actionable BUY/SELL/HOLD alerts — all in a beautiful, modern web interface.
 
 ---
 
@@ -45,8 +45,8 @@
 
 ### 1. Clone and Install
 ```bash
-git clone https://github.com/yourname/NeuroTraderAI.git
-cd NeuroTraderAI
+git clone https://github.com/yourname/CenturionAI.git
+cd CenturionAI
 pip install -r requirements.txt
 ```
 
@@ -68,7 +68,7 @@ serve -s frontend  # or use python3 -m http.server 1300
 
 ## 📁 Project Structure
 
-NeuroTraderAI/
+CenturionAI/
 ├── backend/
 │   ├── app.py           # Flask API server
 │   ├── bot.py           # Core trading logic
