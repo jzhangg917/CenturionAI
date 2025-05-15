@@ -1,32 +1,32 @@
-"""
-Trading bot module for analyzing and generating signals for given tickers.
-"""
+# """
+# Trading bot module for analyzing and generating signals for given tickers.
+# """
 
-import sys
-import json
-from backend_utils import fetch_data, analyze
+# import sys
+# import json
+# from backend_utils import fetch_data, analyze
 
-def run_for_ticker(ticker):
-    """
-    Run analysis for a single ticker and print the results.
+# def run_for_ticker(ticker):
+#     """
+#     Run analysis for a single ticker and print the results.
     
-    Args:
-        ticker: Stock ticker symbol to analyze
-    """
-    df = fetch_data(ticker)
-    if df is None:
-        print(f"❌ No data for {ticker}")
-        return
-    sig = analyze(df, ticker)
-    if sig:
-        print(json.dumps(sig, indent=2))
-    else:
-        print(f"⚠️ Could not generate signal for {ticker}")
+#     Args:
+#         ticker: Stock ticker symbol to analyze
+#     """
+#     df = fetch_data(ticker)
+#     if df is None:
+#         print(f"❌ No data for {ticker}")
+#         return
+#     sig = analyze(df, ticker)
+#     if sig:
+#         print(json.dumps(sig, indent=2))
+#     else:
+#         print(f"⚠️ Could not generate signal for {ticker}")
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python bot.py TICKER1 [TICKER2 ...]")
-        sys.exit(1)
+# if __name__ == "__main__":
+#     if len(sys.argv) < 2:
+#         print("Usage: python bot.py TICKER1 [TICKER2 ...]")
+#         sys.exit(1)
 
-    for ticker in sys.argv[1:]:
-        run_for_ticker(ticker.upper())
+#     for ticker in sys.argv[1:]:
+#         run_for_ticker(ticker.upper())
