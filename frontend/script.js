@@ -1,12 +1,3 @@
-let currentInterval = "1m";
-
-// Event listeners
-document.getElementById("loadBtn").addEventListener("click", fetchSignal);
-document.getElementById("intervalSelector").addEventListener("change", fetchSignal);
-document.getElementById("tickerInput").addEventListener("keypress", (e) => {
-  if (e.key === "Enter") fetchSignal();
-});
-
 // Interval mapping for TradingView
 function convertInterval(interval) {
   const map = {
@@ -133,8 +124,77 @@ async function fetchSignal(ticker) {
       logicList.appendChild(li);
     });
 
+    // --- Candlestick patterns display ---
+    const patternStack = document.getElementById("patternStack");
+    let patternText = data.pattern_stack?.join(", ") || "None";
+    if (data.candlestick_patterns && data.candlestick_patterns.length > 0) {
+      patternText += "\n";
+      data.candlestick_patterns.slice(-5).forEach(pat => {
+        const color = pat.direction === "bullish" ? "#00c853" : pat.direction === "bearish" ? "#d32f2f" : "#aaa";
+        patternText += `\n%c${pat.name} [${pat.direction}]\nEntry: ${pat.entry}  SL: ${pat.stop_loss}  TP: ${pat.take_profit}`;
+      });
+      // For UI, render as HTML
+      patternStack.innerHTML = data.candlestick_patterns.slice(-5).map(pat => {
+        const color = pat.direction === "bullish" ? "#00c853" : pat.direction === "bearish" ? "#d32f2f" : "#aaa";
+        return `<div style="margin:8px 0;padding:8px 12px;border-radius:8px;background:#18181f;color:${color};font-weight:600;">
+          ${pat.name} <span style="font-size:0.95em;font-weight:400;">[${pat.direction}]</span><br>
+          <span style="font-size:0.95em;font-weight:400;color:#fff;">Entry: <b>${pat.entry}</b>  SL: <b>${pat.stop_loss}</b>  TP: <b>${pat.take_profit}</b></span>
+        </div>`;
+      }).join("");
+    } else {
+      patternStack.innerText = patternText;
+    }
+
   } catch (err) {
     console.error("Error fetching signal:", err);
     document.getElementById("error").innerText = err.message;
   }
 }
+
+// --- Ticker input logic ---
+const tickerInput = document.getElementById("tickerInput");
+const loadBtn = document.getElementById("loadBtn");
+let currentTicker = "AAPL";
+
+function updateChartAndSignals(ticker) {
+  currentTicker = ticker.toUpperCase().trim();
+  if (!currentTicker) return;
+  // Update TradingView chart
+  document.getElementById("tvchart").innerHTML = "";
+  new TradingView.widget({
+    autosize: true,
+    symbol: `NASDAQ:${currentTicker}`,
+    interval: "1",
+    timezone: "Etc/UTC",
+    theme: "dark",
+    style: "1",
+    locale: "en",
+    toolbar_bg: "#111",
+    enable_publishing: false,
+    hide_top_toolbar: false,
+    hide_legend: false,
+    container_id: "tvchart"
+  });
+  // Fetch backend signals
+  fetchSignal(currentTicker);
+}
+
+// Always pass ticker string, not event object
+loadBtn.addEventListener("click", () => updateChartAndSignals(tickerInput.value));
+tickerInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    updateChartAndSignals(tickerInput.value);
+  }
+});
+
+const tickerForm = document.getElementById("tickerForm");
+tickerForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  updateChartAndSignals(tickerInput.value);
+});
+
+// On page load, show default ticker
+window.addEventListener('DOMContentLoaded', function() {
+  tickerInput.value = currentTicker;
+  updateChartAndSignals(currentTicker);
+});

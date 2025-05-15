@@ -199,12 +199,52 @@
         padding: 14px 8px 10px 8px;
       }
     }
+    .ticker-form {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .ticker-input {
+      padding: 10px 16px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      border: none;
+      background: #18181f;
+      color: #fff;
+      width: 160px;
+      outline: none;
+      transition: box-shadow 0.2s;
+      box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08);
+    }
+    .ticker-input:focus {
+      box-shadow: 0 0 0 2px #00c85344;
+    }
+    .ticker-btn {
+      padding: 10px 18px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      border: none;
+      background: #00c853;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .ticker-btn:hover {
+      background: #019374;
+    }
   </style>
 </head>
 <body>
   <div class="main-container">
     <h1>🧠 NeuroTraderAI</h1>
     <div id="error"></div>
+    <form id="tickerForm" class="ticker-form" autocomplete="off" onsubmit="return false;">
+      <input id="tickerInput" class="ticker-input" type="text" placeholder="Enter Ticker (e.g. AAPL)" maxlength="10" spellcheck="false" />
+      <button id="loadBtn" class="ticker-btn" type="button">Load</button>
+    </form>
     <div class="signals-card">
       <div class="signal-item">
         <span class="signal-label">Signal</span>

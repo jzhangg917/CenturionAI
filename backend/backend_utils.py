@@ -53,6 +53,56 @@ def fetch_data(ticker, interval="1m"):
 
     return df.tail(LOOKBACK)
 
+def detect_candlestick_patterns(df):
+    """
+    Detect classic candlestick patterns using pandas-ta.
+    Returns a list of detected patterns with trade suggestions.
+    """
+    patterns = []
+    # List of (pattern_name, pandas-ta cdl_pattern name, bullish/bearish)
+    pattern_defs = [
+        ("Hammer", "hammer", "bullish"),
+        ("Inverted Hammer", "inverted_hammer", "bullish"),
+        ("Bullish Engulfing", "engulfing", "bullish"),
+        ("Bearish Engulfing", "engulfing", "bearish"),
+        ("Doji", "doji", "neutral"),
+        ("Morning Star", "morning_star", "bullish"),
+        ("Evening Star", "evening_star", "bearish"),
+        ("Shooting Star", "shooting_star", "bearish"),
+        ("Three White Soldiers", "three_white_soldiers", "bullish"),
+        ("Three Black Crows", "three_black_crows", "bearish"),
+    ]
+    for name, pattern_name, direction in pattern_defs:
+        try:
+            result = ta.cdl_pattern(
+                open_=df["Open"], high=df["High"], low=df["Low"], close=df["Close"], name=pattern_name
+            )
+            # Engulfing: positive = bullish, negative = bearish
+            if pattern_name == "engulfing":
+                if direction == "bullish":
+                    indices = result[result > 0].index
+                else:
+                    indices = result[result < 0].index
+            else:
+                indices = result[result != 0].index
+            for idx in indices:
+                candle = df.loc[idx]
+                entry = candle["High"] + 0.01 if direction == "bullish" else candle["Low"] - 0.01
+                stop = candle["Low"] - 0.01 if direction == "bullish" else candle["High"] + 0.01
+                risk = abs(entry - stop)
+                tp = entry + 2 * risk if direction == "bullish" else entry - 2 * risk
+                patterns.append({
+                    "name": name,
+                    "timestamp": str(idx),
+                    "direction": direction,
+                    "entry": round(entry, 2),
+                    "stop_loss": round(stop, 2),
+                    "take_profit": round(tp, 2),
+                })
+        except Exception as e:
+            continue
+    return patterns
+
 def analyze(df, ticker):
     """
     Analyze market data and generate trading signals.
@@ -133,6 +183,19 @@ def analyze(df, ticker):
     if fvg_patterns:
         pattern_stack.append("Fair Value Gap")
 
+    # --- Candlestick pattern detection ---
+    candle_patterns = detect_candlestick_patterns(df)
+
+    # Inject a fake pattern for testing (remove after confirming UI works)
+    candle_patterns.append({
+        "name": "Hammer (Test)",
+        "timestamp": str(df.index[-1]),
+        "direction": "bullish",
+        "entry": round(df["High"].iloc[-1] + 0.01, 2),
+        "stop_loss": round(df["Low"].iloc[-1] - 0.01, 2),
+        "take_profit": round(df["High"].iloc[-1] + 0.01 + 2 * (df["High"].iloc[-1] + 0.01 - (df["Low"].iloc[-1] - 0.01)), 2),
+    })
+
     result = {
         "ticker": ticker,
         "signal": base_signal,
@@ -146,7 +209,8 @@ def analyze(df, ticker):
         "stop_loss": stop_loss,
         "take_profit": take_profit,
         "history": history,
-        "patterns": fvg_patterns  # to render annotations
+        "patterns": fvg_patterns,  # to render annotations
+        "candlestick_patterns": candle_patterns,  # new field for classic patterns
     }
 
     return result

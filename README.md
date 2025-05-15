@@ -92,3 +92,43 @@ Pull requests and issues are welcome! For major changes, please open an issue fi
 
 ## 📄 License
 MIT
+
+---
+
+## 🗺️ Feature Checklist
+
+- [x] Advanced Candlestick Pattern Recognition (with entry/SL/TP)
+- [ ] Order Block Detection
+- [ ] Automated Support & Resistance Levels
+- [ ] Breakout & Breakdown Strategy
+- [ ] Trend Following with Moving Averages
+- [ ] RSI/MACD Divergence Detection
+- [ ] Volume Spike & Climax Bar Alerts
+- [x] Automated Risk/Reward Calculation (for patterns)
+- [ ] Order Flow & Tape Reading (Advanced)
+- [ ] Backtesting & Signal Stats
+- [x] Modern, Figma-inspired UI
+- [x] Ticker input with chart/signal sync
+- [ ] Chart Annotations (highlight candles, draw lines/boxes)
+- [ ] Pattern Quality/Strength Scoring
+- [ ] Multi-Timeframe Confluence
+- [ ] Alerts/Automation
+- [ ] Pattern Education (tooltips, info modals)
+
+---
+
+## 🚦 Prioritized Roadmap
+
+1. Chart Annotations (highlight detected patterns on the chart)
+2. Pattern Quality/Strength Scoring
+3. Automated Support & Resistance Levels
+4. Breakout & Breakdown Strategy
+5. Trend Following with Moving Averages
+6. RSI/MACD Divergence Detection
+7. Order Block Detection
+8. Volume Spike & Climax Bar Alerts
+9. Multi-Timeframe Confluence
+10. Backtesting & Signal Stats
+11. Pattern Education (tooltips, info modals)
+12. Alerts/Automation
+13. Order Flow & Tape Reading (Advanced)
