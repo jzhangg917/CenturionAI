@@ -2,7 +2,7 @@
 
 ![UI Screenshot](frontend/screenshot.png)
 
-**CenturionAI** is an intelligent trading signal bot and dashboard that mimics how an elite Wall Street trader might analyze markets. It combines real-time stock data, technical indicators, and pattern recognition to generate actionable BUY/SELL/HOLD alerts — all in a beautiful, modern web interface.
+**CenturionAI** brings discipline and strategic insight to trading, quietly monitoring the markets and analyzing patterns to deliver actionable signals. Drawing on the precision and vigilance of elite market guardians, it combines technical indicators, pattern recognition, and a modern dashboard to help you trade with confidence.
 
 ---
 
@@ -68,20 +68,24 @@ serve -s frontend  # or use python3 -m http.server 1300
 
 ## 📁 Project Structure
 
+```plaintext
 CenturionAI/
 ├── backend/
-│   ├── app.py           # Flask API server
-│   ├── bot.py           # Core trading logic
-│   ├── backend_utils.py # Indicator + save helpers
-│   └── *.json / *.csv   # Generated signal/log files
+│   ├── app.py              # Flask API server
+│   ├── bot.py              # Core trading logic
+│   ├── backend_utils.py    # Indicator + save helpers
+│   ├── pattern_engine.py   # Pattern recognition logic
+│   └── __pycache__/        # Python cache files
 │
 ├── frontend/
-│   ├── index.html       # Web dashboard UI
-│   ├── script.js        # JS to fetch and render signals
-│   ├── screenshot.png   # UI screenshot (add this file)
-│   └── data/            # Stores ticker JSON/CSV for frontend
+│   ├── index.html          # Web dashboard UI
+│   ├── script.js           # JS to fetch and render signals
+│   ├── style.css           # Dashboard styling
+│   └── screenshot.png      # UI screenshot
 │
-└── requirements.txt     # Python dependencies
+├── requirements.txt        # Python dependencies
+└── README.md               # Project documentation
+```
 
 ---
 
