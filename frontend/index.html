@@ -380,6 +380,108 @@
       text-align: center;
       margin-top: 40px;
     }
+    .backtest-card {
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+      border-radius: 14px;
+      margin: 48px auto 0 auto;
+      max-width: 1200px;
+      width: 100%;
+      padding: 32px 40px 32px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      animation: fadeInUp 0.7s cubic-bezier(.23,1.02,.32,1) both;
+    }
+    .backtest-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 18px 0;
+      color: var(--text);
+    }
+    .backtest-form {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .backtest-input {
+      padding: 10px 14px;
+      font-size: 1.08rem;
+      border-radius: 8px;
+      border: none;
+      background: #18181f;
+      color: #fff;
+      min-width: 120px;
+      outline: none;
+      transition: box-shadow 0.2s;
+      box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08);
+    }
+    .backtest-btn {
+      padding: 10px 22px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      border: none;
+      background: #FFD700;
+      color: #18181f;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.3s;
+      box-shadow: 0 0 0 transparent;
+    }
+    .backtest-btn:hover {
+      background: #00c853;
+      color: #fff;
+      box-shadow: 0 0 12px 2px #00c85388;
+    }
+    .backtest-results {
+      margin-top: 18px;
+      background: #18181f;
+      border-radius: 8px;
+      padding: 18px 18px 10px 18px;
+      min-height: 80px;
+      color: var(--text);
+      font-size: 1.08rem;
+    }
+    .backtest-placeholder {
+      color: var(--text-muted);
+      text-align: center;
+      margin: 18px 0;
+    }
+    .backtest-metrics {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .backtest-metric {
+      background: #22222a;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 1.08rem;
+      font-weight: 600;
+      color: #FFD700;
+      margin-bottom: 8px;
+    }
+    .backtest-signals-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .backtest-signals-table th, .backtest-signals-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #23232b;
+      text-align: left;
+    }
+    .backtest-signals-table th {
+      color: #FFD700;
+      font-weight: 700;
+      background: #18181f;
+    }
+    .backtest-signals-table tr:last-child td {
+      border-bottom: none;
+    }
   </style>
 </head>
 <body>
@@ -434,6 +536,27 @@
         <div class="news-list" id="newsList">
           <div class="news-placeholder">Loading news...</div>
         </div>
+      </div>
+    </div>
+    <div class="backtest-card">
+      <div class="backtest-header">
+        <h2>Backtesting & Signal Stats</h2>
+      </div>
+      <form id="backtestForm" class="backtest-form" autocomplete="off" onsubmit="return false;">
+        <input id="backtestTicker" class="backtest-input" type="text" placeholder="Ticker" maxlength="10" spellcheck="false" />
+        <select id="backtestInterval" class="backtest-input">
+          <option value="1d">1d</option>
+          <option value="1h">1h</option>
+          <option value="15m">15m</option>
+          <option value="5m">5m</option>
+          <option value="1m">1m</option>
+        </select>
+        <input id="backtestStart" class="backtest-input" type="date" />
+        <input id="backtestEnd" class="backtest-input" type="date" />
+        <button id="runBacktestBtn" class="backtest-btn" type="button">Run Backtest</button>
+      </form>
+      <div id="backtestResults" class="backtest-results">
+        <div class="backtest-placeholder">Run a backtest to see results.</div>
       </div>
     </div>
   </div>

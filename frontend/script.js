@@ -230,3 +230,69 @@ tickerInput.addEventListener("keydown", e => {
     if (ticker) updateChartAndSignals(ticker);
   }
 });
+
+// --- Backtest UI Logic ---
+const backtestForm = document.getElementById("backtestForm");
+const backtestTicker = document.getElementById("backtestTicker");
+const backtestInterval = document.getElementById("backtestInterval");
+const backtestStart = document.getElementById("backtestStart");
+const backtestEnd = document.getElementById("backtestEnd");
+const runBacktestBtn = document.getElementById("runBacktestBtn");
+const backtestResults = document.getElementById("backtestResults");
+
+// Set default ticker to currentTicker on load
+window.addEventListener('DOMContentLoaded', () => {
+  if (backtestTicker) backtestTicker.value = currentTicker;
+  // Set default dates (last 90 days)
+  if (backtestEnd && backtestStart) {
+    const today = new Date();
+    const prior = new Date();
+    prior.setDate(today.getDate() - 90);
+    backtestEnd.value = today.toISOString().slice(0, 10);
+    backtestStart.value = prior.toISOString().slice(0, 10);
+  }
+});
+
+runBacktestBtn.addEventListener("click", async () => {
+  const ticker = (backtestTicker.value || currentTicker).toUpperCase().trim();
+  const interval = backtestInterval.value;
+  const start = backtestStart.value;
+  const end = backtestEnd.value;
+  if (!ticker || !start || !end) {
+    backtestResults.innerHTML = '<div class="backtest-placeholder">Please fill in all fields.</div>';
+    return;
+  }
+  backtestResults.innerHTML = '<div class="backtest-placeholder">Running backtest...</div>';
+  try {
+    const res = await fetch(`/backtest?ticker=${ticker}&interval=${interval}&start=${start}&end=${end}`);
+    if (!res.ok) throw new Error("Backtest failed");
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    // Render metrics
+    const m = data.metrics;
+    const metricsHTML = `
+      <div class="backtest-metrics">
+        <div class="backtest-metric">Total Trades: ${m.total_trades}</div>
+        <div class="backtest-metric">Win Rate: ${m.win_rate}%</div>
+        <div class="backtest-metric">Avg Return: ${m.avg_return}%</div>
+        <div class="backtest-metric">Max Drawdown: ${m.max_drawdown}%</div>
+      </div>
+    `;
+    // Render signals table
+    const signals = data.signals || [];
+    let signalsHTML = '';
+    if (signals.length > 0) {
+      signalsHTML = `<table class="backtest-signals-table">
+        <thead><tr><th>Timestamp</th><th>Signal</th><th>Price</th></tr></thead>
+        <tbody>
+          ${signals.map(s => `<tr><td>${s.timestamp}</td><td>${s.signal}</td><td>${s.price}</td></tr>`).join('')}
+        </tbody>
+      </table>`;
+    } else {
+      signalsHTML = '<div class="backtest-placeholder">No signals generated in this period.</div>';
+    }
+    backtestResults.innerHTML = metricsHTML + signalsHTML;
+  } catch (err) {
+    backtestResults.innerHTML = `<div class="backtest-placeholder">${err.message || 'Error running backtest.'}</div>`;
+  }
+});

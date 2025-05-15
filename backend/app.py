@@ -7,7 +7,8 @@ from backend_utils import fetch_data, analyze, save_outputs
 import os
 import requests # type: ignore
 from datetime import datetime
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
+import pandas as pd
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
 
@@ -116,6 +117,73 @@ def get_news():
         return jsonify(articles)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/backtest")
+def backtest():
+    """
+    Run backtest for a given ticker, interval, and date range.
+    Returns JSON with list of signals and performance metrics.
+    """
+    ticker = request.args.get("ticker", "").upper()
+    interval = request.args.get("interval", "1d")
+    start = request.args.get("start")
+    end = request.args.get("end")
+    if not ticker or not start or not end:
+        return jsonify({"error": "Missing ticker, start, or end"}), 400
+
+    # Fetch historical data for the range
+    df = fetch_data(ticker, interval)
+    if df is None or df.empty:
+        return jsonify({"error": "No data"}), 404
+    start_dt = pd.to_datetime(start)
+    end_dt = pd.to_datetime(end)
+    if df.index.tz is not None:
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.tz_localize('UTC')
+        else:
+            start_dt = start_dt.tz_convert('UTC')
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.tz_localize('UTC')
+        else:
+            end_dt = end_dt.tz_convert('UTC')
+    df = df[(df.index >= start_dt) & (df.index <= end_dt)]
+    if df.empty:
+        return jsonify({"error": "No data in range"}), 404
+
+    signals = []
+    last_signal = None
+    returns = []
+    entry_price = None
+    for i in range(1, len(df)):
+        sub_df = df.iloc[:i+1]
+        result = analyze(sub_df, ticker)
+        if not result:
+            continue
+        signal = result["signal"]
+        price = sub_df["Close"].iloc[-1]
+        ts = sub_df.index[-1].strftime("%Y-%m-%d %H:%M:%S")
+        if signal != last_signal and signal in ["BUY", "SELL"]:
+            signals.append({"timestamp": ts, "signal": signal, "price": price})
+            if last_signal == "BUY" and signal == "SELL" and entry_price is not None:
+                returns.append((price - entry_price) / entry_price)
+                entry_price = None
+            elif signal == "BUY":
+                entry_price = price
+            last_signal = signal
+
+    win_trades = [r for r in returns if r > 0]
+    loss_trades = [r for r in returns if r <= 0]
+    win_rate = round(100 * len(win_trades) / len(returns), 2) if returns else 0
+    avg_return = round(100 * sum(returns) / len(returns), 2) if returns else 0
+    max_drawdown = round(100 * (min(returns) if returns else 0), 2)
+
+    metrics = {
+        "total_trades": len(returns),
+        "win_rate": win_rate,
+        "avg_return": avg_return,
+        "max_drawdown": max_drawdown
+    }
+    return jsonify({"signals": signals, "metrics": metrics})
 
 if __name__ == "__main__":
     app.run(debug=True, port=3000)

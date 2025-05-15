@@ -68,6 +68,8 @@ def detect_bos(df, structure_len=10):
         Tuple of (BOS type, level) if detected, (None, None) otherwise
     """
     recent_closes = df["Close"].tail(structure_len).tolist()
+    if len(recent_closes) <= 2:
+        return None, None
     trend = "up" if recent_closes[-1] > recent_closes[0] else "down"
 
     if trend == "up" and recent_closes[-1] < min(recent_closes[:-2]):
