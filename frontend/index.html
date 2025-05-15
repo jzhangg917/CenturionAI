@@ -38,30 +38,31 @@
     }
     .main-container {
       width: 100vw;
-      max-width: 900px;
+      max-width: 1300px;
       margin: 0 auto;
-      padding: 0 0 40px 0;
+      padding: 0 0 60px 0;
       position: relative;
       display: flex;
       flex-direction: column;
-      gap: 32px;
+      gap: 48px;
     }
     h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      margin: 32px 0 24px 0;
-      letter-spacing: -1px;
+      font-size: 2.8rem;
+      font-weight: 800;
+      margin: 32px 0 4px 0;
+      letter-spacing: -1.5px;
       color: var(--text);
-      text-align: left;
+      text-align: center;
+      width: 100%;
     }
     .signals-card {
       background: var(--card-bg);
       box-shadow: var(--shadow);
-      border-radius: 16px;
-      padding: 24px 32px;
+      border-radius: 24px;
+      padding: 36px 56px;
       display: flex;
-      gap: 32px;
-      min-width: 340px;
+      gap: 48px;
+      min-width: 420px;
       max-width: 100%;
       align-items: center;
       justify-content: center;
@@ -71,24 +72,24 @@
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      min-width: 80px;
+      min-width: 100px;
     }
     .signal-label {
-      font-size: 0.95rem;
+      font-size: 1.15rem;
       color: var(--text-muted);
-      margin-bottom: 4px;
-      font-weight: 500;
+      margin-bottom: 6px;
+      font-weight: 600;
     }
     .signal-value {
-      font-size: 1.2rem;
-      font-weight: 600;
+      font-size: 1.5rem;
+      font-weight: 700;
       letter-spacing: 0.5px;
     }
     .badge {
-      padding: 4px 14px;
-      border-radius: 8px;
+      padding: 6px 20px;
+      border-radius: 12px;
       font-weight: bold;
-      font-size: 1.1rem;
+      font-size: 1.3rem;
       margin-left: 0;
     }
     .buy { background-color: var(--accent); color: #fff; }
@@ -101,34 +102,30 @@
       text-align: center;
     }
     .chart-card {
-      background: var(--card-bg);
-      box-shadow: var(--shadow);
-      border-radius: 18px;
+      flex: 2 1 0;
+      min-width: 0;
+      max-width: 70%;
+      min-height: 600px;
+      border-radius: 7px;
       padding: 0;
-      width: 100%;
-      min-height: 480px;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: center;
-      margin-bottom: 0;
     }
     #tvchart {
       width: 100%;
-      height: 480px;
-      border-radius: 18px;
+      height: 600px;
+      border-radius: 6px;
       overflow: hidden;
       background: #18181f;
     }
     .patterns-card {
-      background: var(--card-bg);
-      box-shadow: var(--shadow);
-      border-radius: 16px;
-      margin: 0 auto;
-      padding: 24px 32px 18px 32px;
-      max-width: 100%;
-      width: 100%;
-      transition: max-height 0.3s;
+      flex: 1 1 0;
+      min-width: 380px;
+      max-width: 30%;
+      margin: 0;
+      height: 600px;
+      overflow-y: auto;
+      border-radius: 7px;
+      font-size: 1.15rem;
+      padding: 14px 14px 8px 14px;
     }
     .patterns-header {
       display: flex;
@@ -138,8 +135,8 @@
       user-select: none;
     }
     .patterns-header h2 {
-      font-size: 1.1rem;
-      font-weight: 600;
+      font-size: 1.3rem;
+      font-weight: 700;
       margin: 0;
       color: var(--text);
     }
@@ -156,15 +153,15 @@
       display: none;
     }
     .patterns-label {
-      font-size: 0.95rem;
+      font-size: 1.1rem;
       color: var(--text-muted);
-      margin-bottom: 4px;
-      font-weight: 500;
+      margin-bottom: 8px;
+      font-weight: 600;
     }
     #patternStack {
-      font-size: 1.05rem;
+      font-size: 1.15rem;
       color: var(--text);
-      margin-bottom: 10px;
+      margin-bottom: 14px;
     }
     #logicList {
       list-style: none;
@@ -172,12 +169,12 @@
       margin: 0;
     }
     #logicList li {
-      margin-bottom: 8px;
-      padding: 8px 12px;
+      margin-bottom: 10px;
+      padding: 12px 16px;
       background: #22222a;
-      border-radius: 8px;
+      border-radius: 10px;
       color: var(--text);
-      font-size: 1rem;
+      font-size: 1.1rem;
     }
     @media (max-width: 700px) {
       .signals-card {
@@ -204,7 +201,8 @@
       justify-content: center;
       align-items: center;
       gap: 10px;
-      margin-bottom: 18px;
+      margin-bottom: 10px;
+      margin-top: 0;
     }
     .ticker-input {
       padding: 10px 16px;
@@ -234,6 +232,24 @@
     }
     .ticker-btn:hover {
       background: #019374;
+    }
+    .dashboard-flex {
+      display: flex;
+      flex-direction: row;
+      gap: 48px;
+      width: 100%;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-top: 32px;
+    }
+    @media (max-width: 1100px) {
+      .dashboard-flex {
+        flex-direction: column;
+        gap: 24px;
+      }
+      .chart-card, .patterns-card {
+        max-width: 100%;
+      }
     }
   </style>
 </head>
@@ -267,18 +283,20 @@
         <span id="entrySignal" class="signal-value"></span>
       </div>
     </div>
-    <div class="chart-card">
-      <div id="tvchart"></div>
-    </div>
-    <div class="patterns-card">
-      <div class="patterns-header" onclick="togglePatterns()">
-        <h2>Patterns & Logic</h2>
-        <span class="collapse-arrow" id="collapseArrow">▼</span>
+    <div class="dashboard-flex">
+      <div class="chart-card">
+        <div id="tvchart"></div>
       </div>
-      <div class="patterns-content" id="patternsContent">
-        <div class="patterns-label">Detected Patterns</div>
-        <span id="patternStack"></span>
-        <ul id="logicList"></ul>
+      <div class="patterns-card">
+        <div class="patterns-header" onclick="togglePatterns()">
+          <h2>Patterns & Logic</h2>
+          <span class="collapse-arrow" id="collapseArrow">▼</span>
+        </div>
+        <div class="patterns-content" id="patternsContent">
+          <div class="patterns-label">Detected Patterns</div>
+          <span id="patternStack"></span>
+          <ul id="logicList"></ul>
+        </div>
       </div>
     </div>
   </div>
