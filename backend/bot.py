@@ -1,10 +1,18 @@
-# backend/bot.py
+"""
+Trading bot module for analyzing and generating signals for given tickers.
+"""
 
 import sys
 import json
 from backend_utils import fetch_data, analyze
 
 def run_for_ticker(ticker):
+    """
+    Run analysis for a single ticker and print the results.
+    
+    Args:
+        ticker: Stock ticker symbol to analyze
+    """
     df = fetch_data(ticker)
     if df is None:
         print(f"❌ No data for {ticker}")
