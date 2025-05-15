@@ -38,7 +38,7 @@
     }
     .main-container {
       width: 100vw;
-      max-width: 1300px;
+      max-width: 1700px;
       margin: 0 auto;
       padding: 0 0 60px 0;
       position: relative;
@@ -54,6 +54,21 @@
       color: var(--text);
       text-align: center;
       width: 100%;
+      position: relative;
+      display: inline-block;
+    }
+    h1::after {
+      content: '';
+      display: block;
+      margin: 0 auto;
+      width: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #FFD700 60%, #00c853 100%);
+      border-radius: 2px;
+      transition: width 1s cubic-bezier(.23,1.02,.32,1);
+    }
+    body.loaded h1::after {
+      width: 80%;
     }
     .signals-card {
       background: var(--card-bg);
@@ -67,6 +82,12 @@
       align-items: center;
       justify-content: center;
       margin-bottom: 0;
+      animation: fadeInUp 0.7s cubic-bezier(.23,1.02,.32,1) both;
+      transition: transform 0.2s cubic-bezier(.23,1.02,.32,1), box-shadow 0.2s;
+    }
+    .signals-card:hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 8px 32px 0 #FFD70022;
     }
     .signal-item {
       display: flex;
@@ -102,12 +123,15 @@
       text-align: center;
     }
     .chart-card {
-      flex: 2 1 0;
+      flex: 0 1 50%;
       min-width: 0;
-      max-width: 70%;
+      max-width: 50%;
+      width: 100%;
       min-height: 600px;
       border-radius: 7px;
       padding: 0;
+      animation: fadeInUp 0.7s cubic-bezier(.23,1.02,.32,1) both;
+      transition: transform 0.2s cubic-bezier(.23,1.02,.32,1), box-shadow 0.2s;
     }
     #tvchart {
       width: 100%;
@@ -117,15 +141,22 @@
       background: #18181f;
     }
     .patterns-card {
-      flex: 1 1 0;
-      min-width: 380px;
-      max-width: 30%;
+      flex: 0 1 25%;
+      min-width: 0;
+      max-width: 25%;
+      width: 100%;
       margin: 0;
       height: 600px;
       overflow-y: auto;
       border-radius: 7px;
       font-size: 1.15rem;
       padding: 14px 14px 8px 14px;
+      animation: fadeInUp 0.7s cubic-bezier(.23,1.02,.32,1) both;
+      transition: transform 0.2s cubic-bezier(.23,1.02,.32,1), box-shadow 0.2s;
+    }
+    .patterns-card:hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 8px 32px 0 #FFD70022;
     }
     .patterns-header {
       display: flex;
@@ -228,28 +259,126 @@
       color: #fff;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, box-shadow 0.3s;
+      box-shadow: 0 0 0 transparent;
     }
     .ticker-btn:hover {
-      background: #019374;
+      background: #FFD700;
+      color: #18181f;
+      box-shadow: 0 0 12px 2px #FFD70088;
     }
     .dashboard-flex {
       display: flex;
       flex-direction: row;
-      gap: 48px;
+      gap: 32px;
       width: 100%;
       justify-content: space-between;
       align-items: flex-start;
       margin-top: 32px;
+      animation: fadeInUp 0.7s cubic-bezier(.23,1.02,.32,1) both;
+      transition: transform 0.2s cubic-bezier(.23,1.02,.32,1), box-shadow 0.2s;
     }
     @media (max-width: 1100px) {
       .dashboard-flex {
         flex-direction: column;
         gap: 24px;
       }
-      .chart-card, .patterns-card {
+      .chart-card, .patterns-card, .news-sidebar {
         max-width: 100%;
       }
+    }
+    /* Card entrance animation */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(40px);}
+      to   { opacity: 1; transform: translateY(0);}
+    }
+    /* Signal badge pulse */
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 #FFD70055; }
+      70% { box-shadow: 0 0 0 10px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+    .badge.pulse {
+      animation: pulse 0.7s;
+    }
+    .news-sidebar {
+      flex: 0 1 25%;
+      min-width: 0;
+      max-width: 25%;
+      width: 100%;
+      height: 600px;
+      background: var(--card-bg);
+      border-radius: 7px;
+      margin-left: 0;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: fadeInUp 0.7s cubic-bezier(.23,1.02,.32,1) both;
+    }
+    .news-header {
+      padding: 16px 18px 8px 18px;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+    }
+    .news-header h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text);
+    }
+    .news-list {
+      flex: 1 1 0;
+      overflow-y: auto;
+      padding: 10px 18px 10px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .news-item {
+      background: #18181f;
+      border-radius: 6px;
+      padding: 14px 14px 10px 14px;
+      box-shadow: 0 2px 8px 0 #0002;
+      transition: box-shadow 0.2s, transform 0.2s, background 0.2s;
+      cursor: pointer;
+      opacity: 0;
+      animation: fadeInUp 0.7s cubic-bezier(.23,1.02,.32,1) both;
+      animation-delay: 0.1s;
+    }
+    .news-item:hover {
+      background: #23232b;
+      box-shadow: 0 4px 16px 0 #FFD70033;
+      transform: translateY(-2px) scale(1.01);
+    }
+    .news-headline {
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: #FFD700;
+      margin-bottom: 4px;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .news-item:hover .news-headline {
+      color: #fffbe6;
+      text-decoration: underline;
+    }
+    .news-summary {
+      font-size: 0.98rem;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .news-meta {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .news-placeholder {
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 40px;
     }
   </style>
 </head>
@@ -298,6 +427,14 @@
           <ul id="logicList"></ul>
         </div>
       </div>
+      <div class="news-sidebar">
+        <div class="news-header">
+          <h2>Market News</h2>
+        </div>
+        <div class="news-list" id="newsList">
+          <div class="news-placeholder">Loading news...</div>
+        </div>
+      </div>
     </div>
   </div>
   <script src="https://s3.tradingview.com/tv.js"></script>
@@ -338,6 +475,23 @@
       }
       loadTV();
     });
+
+    // Gold underline animation on title
+    window.addEventListener('DOMContentLoaded', () => {
+      document.body.classList.add('loaded');
+    });
+
+    // Signal badge pulse on change
+    let lastSignal = '';
+    function pulseSignalBadge(newSignal) {
+      const badge = document.getElementById('signal');
+      if (badge && newSignal !== lastSignal) {
+        badge.classList.remove('pulse');
+        void badge.offsetWidth; // trigger reflow
+        badge.classList.add('pulse');
+        lastSignal = newSignal;
+      }
+    }
   </script>
   <script src="script.js"></script>
 </body>

@@ -7,8 +7,11 @@ from backend_utils import fetch_data, analyze, save_outputs
 import os
 import requests # type: ignore
 from datetime import datetime
+from dotenv import load_dotenv
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'))
 
 @app.route("/logo")
 def get_logo():
@@ -81,6 +84,38 @@ def run_signal():
         } for i, r in df_tail.iterrows()
     ]
     return jsonify(sig)
+
+@app.route("/news")
+def get_news():
+    """
+    Fetch latest news for a given ticker using Finnhub API.
+    Returns JSON list of news articles (headline, summary, url, datetime, source, image)
+    """
+    ticker = request.args.get("ticker", "").upper()
+    if not ticker:
+        return jsonify({"error": "Missing ticker"}), 400
+    api_key = os.environ.get("FINNHUB_API_KEY")
+    if not api_key:
+        return jsonify({"error": "Missing Finnhub API key"}), 500
+    try:
+        url = f"https://finnhub.io/api/v1/company-news?symbol={ticker}&from=2023-01-01&to=2025-12-31&token={api_key}"
+        res = requests.get(url, timeout=5)
+        news = res.json()
+        # Only keep relevant fields and limit to 10 articles
+        articles = [
+            {
+                "headline": n.get("headline"),
+                "summary": n.get("summary"),
+                "url": n.get("url"),
+                "datetime": n.get("datetime"),
+                "source": n.get("source"),
+                "image": n.get("image")
+            }
+            for n in news[:10]
+        ]
+        return jsonify(articles)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=3000)

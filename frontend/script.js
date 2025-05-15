@@ -156,6 +156,39 @@ const tickerInput = document.getElementById("tickerInput");
 const loadBtn = document.getElementById("loadBtn");
 let currentTicker = "AAPL";
 
+// --- News Sidebar Logic ---
+async function fetchAndRenderNews(ticker) {
+  const newsList = document.getElementById("newsList");
+  newsList.innerHTML = '<div class="news-placeholder">Loading news...</div>';
+  try {
+    const res = await fetch(`/news?ticker=${ticker}`);
+    if (!res.ok) throw new Error("No news found");
+    const articles = await res.json();
+    if (!Array.isArray(articles) || articles.length === 0) {
+      newsList.innerHTML = '<div class="news-placeholder">No news found.</div>';
+      return;
+    }
+    newsList.innerHTML = '';
+    articles.forEach((n, i) => {
+      const item = document.createElement('div');
+      item.className = 'news-item';
+      item.style.animationDelay = `${0.05 * i}s`;
+      item.innerHTML = `
+        <a href="${n.url}" class="news-headline" target="_blank" rel="noopener noreferrer">${n.headline}</a>
+        <div class="news-summary">${n.summary ? n.summary.slice(0, 180) + (n.summary.length > 180 ? '...' : '') : ''}</div>
+        <div class="news-meta">
+          <span>${n.source || ''}</span>
+          <span>${n.datetime ? new Date(n.datetime * 1000).toLocaleString() : ''}</span>
+        </div>
+      `;
+      newsList.appendChild(item);
+      setTimeout(() => { item.style.opacity = 1; }, 100 + 50 * i);
+    });
+  } catch (err) {
+    newsList.innerHTML = `<div class="news-placeholder">Error loading news.</div>`;
+  }
+}
+
 function updateChartAndSignals(ticker) {
   currentTicker = ticker.toUpperCase().trim();
   if (!currentTicker) return;
@@ -177,24 +210,23 @@ function updateChartAndSignals(ticker) {
   });
   // Fetch backend signals
   fetchSignal(currentTicker);
+  // Fetch news
+  fetchAndRenderNews(currentTicker);
 }
 
-// Always pass ticker string, not event object
-loadBtn.addEventListener("click", () => updateChartAndSignals(tickerInput.value));
-tickerInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") {
-    updateChartAndSignals(tickerInput.value);
-  }
-});
-
-const tickerForm = document.getElementById("tickerForm");
-tickerForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  updateChartAndSignals(tickerInput.value);
-});
-
-// On page load, show default ticker
-window.addEventListener('DOMContentLoaded', function() {
-  tickerInput.value = currentTicker;
+// Initial load
+window.addEventListener('DOMContentLoaded', () => {
   updateChartAndSignals(currentTicker);
+});
+
+loadBtn.addEventListener("click", () => {
+  const ticker = tickerInput.value.trim();
+  if (ticker) updateChartAndSignals(ticker);
+});
+
+tickerInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    const ticker = tickerInput.value.trim();
+    if (ticker) updateChartAndSignals(ticker);
+  }
 });
