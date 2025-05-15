@@ -47,19 +47,65 @@ function loadTradingViewWidget(ticker, interval) {
   });
 }
 
-async function fetchSignal() {
-  const ticker = document.getElementById("tickerInput").value.toUpperCase().trim();
-  currentInterval = document.getElementById("intervalSelector").value;
+// Load TradingView script
+if (!window.TradingView) {
+  const script = document.createElement("script");
+  script.src = "https://s3.tradingview.com/tv.js";
+  script.onload = () => {
+    console.log("TradingView loaded");
+    initializeTradingView();
+  };
+  document.head.appendChild(script);
+}
+
+function initializeTradingView() {
+  new TradingView.widget({
+    autosize: true,
+    symbol: "NASDAQ:AAPL", // Default symbol
+    interval: "1",
+    timezone: "Etc/UTC",
+    theme: "dark",
+    style: "1",
+    locale: "en",
+    toolbar_bg: "#111",
+    enable_publishing: false,
+    hide_top_toolbar: false,
+    hide_legend: false,
+    container_id: "tvchart",
+    studies: [
+      "RSI@tv-basicstudies",
+      "MACD@tv-basicstudies"
+    ],
+    save_image: false,
+    overrides: {
+      "mainSeriesProperties.candleStyle.upColor": "#00c853",
+      "mainSeriesProperties.candleStyle.downColor": "#d32f2f",
+      "mainSeriesProperties.candleStyle.borderUpColor": "#00c853",
+      "mainSeriesProperties.candleStyle.borderDownColor": "#d32f2f",
+      "mainSeriesProperties.candleStyle.wickUpColor": "#00c853",
+      "mainSeriesProperties.candleStyle.wickDownColor": "#d32f2f"
+    }
+  });
+}
+
+// Listen for symbol changes from TradingView
+window.addEventListener('message', async (event) => {
+  if (event.data.type === 'symbolChange') {
+    const ticker = event.data.symbol.split(':')[1];
+    await fetchSignal(ticker);
+  }
+});
+
+async function fetchSignal(ticker) {
   if (!ticker) return;
 
   try {
-    const res = await fetch(`/run?ticker=${ticker}&interval=${currentInterval}`);
+    const res = await fetch(`/run?ticker=${ticker}`);
     if (!res.ok) throw new Error("Ticker not found or backend error");
 
     const data = await res.json();
 
     document.getElementById("error").innerText = "";
-    document.getElementById("ticker").innerText = data.ticker;
     document.getElementById("confidence").innerText = `${data.confidence}%`;
     document.getElementById("price").innerText = `$${data.price}`;
     document.getElementById("timestamp").innerText = formatTimeAgo(data.timestamp);
@@ -87,18 +133,8 @@ async function fetchSignal() {
       logicList.appendChild(li);
     });
 
-    loadTradingViewWidget(ticker, currentInterval);
-
   } catch (err) {
-    console.error("Chart rendering failed:", err);
+    console.error("Error fetching signal:", err);
     document.getElementById("error").innerText = err.message;
   }
-}
-
-// Load TradingView script once
-if (!window.TradingView) {
-  const script = document.createElement("script");
-  script.src = "https://s3.tradingview.com/tv.js";
-  script.onload = () => console.log("TradingView loaded");
-  document.head.appendChild(script);
 }

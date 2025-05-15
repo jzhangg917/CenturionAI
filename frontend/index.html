@@ -9,120 +9,278 @@
   <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
 
   <style>
+    :root {
+      --bg: #101014;
+      --card-bg: #18181f;
+      --accent: #00c853;
+      --danger: #d32f2f;
+      --wait: #666;
+      --text: #fff;
+      --text-muted: #aaa;
+      --border: #23232b;
+      --shadow: 0 4px 32px 0 rgba(0,0,0,0.25);
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', Arial, sans-serif;
+      min-height: 100vh;
+    }
     body {
-      font-family: Arial, sans-serif;
-      background-color: #111;
-      color: #fff;
-      padding: 20px;
-      max-width: 1000px;
-      margin: auto;
-    }
-
-    .input-row {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 0;
     }
-
-    input, select, button {
-      padding: 10px;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
+    .main-container {
+      width: 100vw;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 0 40px 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
     }
-
-    input, select {
-      flex: 1;
-      background: #222;
-      color: white;
-    }
-
-    button {
-      background-color: #00b894;
-      color: white;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #019374;
-    }
-
-    .badge {
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-weight: bold;
-    }
-
-    .buy { background-color: #00c853; }
-    .sell { background-color: #d32f2f; }
-    .wait { background-color: #666; }
-
-    #tvchart {
-      height: 400px;
-      width: 100%;
-      margin-top: 30px;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    #error {
-      color: red;
-      font-weight: bold;
-    }
-
-    ul {
-      margin-top: 10px;
-    }
-
     h1 {
-      font-size: 1.6rem;
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 32px 0 24px 0;
+      letter-spacing: -1px;
+      color: var(--text);
+      text-align: left;
+    }
+    .signals-card {
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+      border-radius: 16px;
+      padding: 24px 32px;
+      display: flex;
+      gap: 32px;
+      min-width: 340px;
+      max-width: 100%;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0;
+    }
+    .signal-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 80px;
+    }
+    .signal-label {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    .signal-value {
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .badge {
+      padding: 4px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin-left: 0;
+    }
+    .buy { background-color: var(--accent); color: #fff; }
+    .sell { background-color: var(--danger); color: #fff; }
+    .wait { background-color: var(--wait); color: #fff; }
+    #error {
+      color: var(--danger);
+      font-weight: bold;
+      margin: 12px 0 0 0;
+      text-align: center;
+    }
+    .chart-card {
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+      border-radius: 18px;
+      padding: 0;
+      width: 100%;
+      min-height: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      margin-bottom: 0;
+    }
+    #tvchart {
+      width: 100%;
+      height: 480px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #18181f;
+    }
+    .patterns-card {
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+      border-radius: 16px;
+      margin: 0 auto;
+      padding: 24px 32px 18px 32px;
+      max-width: 100%;
+      width: 100%;
+      transition: max-height 0.3s;
+    }
+    .patterns-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .patterns-header h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
+      color: var(--text);
+    }
+    .collapse-arrow {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      transition: transform 0.3s;
+    }
+    .patterns-content {
+      margin-top: 18px;
+      display: block;
+    }
+    .patterns-content.collapsed {
+      display: none;
+    }
+    .patterns-label {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    #patternStack {
+      font-size: 1.05rem;
+      color: var(--text);
       margin-bottom: 10px;
     }
-
-    .info {
-      margin-top: 20px;
+    #logicList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
     }
-
-    .info div {
-      margin-bottom: 6px;
+    #logicList li {
+      margin-bottom: 8px;
+      padding: 8px 12px;
+      background: #22222a;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    @media (max-width: 700px) {
+      .signals-card {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px 10px;
+        min-width: 0;
+      }
+      .main-container {
+        padding: 0 0 24px 0;
+      }
+      .chart-card {
+        min-height: 240px;
+      }
+      #tvchart {
+        height: 240px;
+      }
+      .patterns-card {
+        padding: 14px 8px 10px 8px;
+      }
     }
   </style>
 </head>
 <body>
-
-  <h1>🧠 NeuroTraderAI</h1>
-
-  <div class="input-row">
-    <select id="intervalSelector">
-      <option value="1m">1 Minute</option>
-      <option value="5m">5 Minutes</option>
-      <option value="15m">15 Minutes</option>
-      <option value="1h">1 Hour</option>
-      <option value="1d">1 Day</option>
-    </select>
-    <input type="text" id="tickerInput" placeholder="Enter Ticker (e.g. AAPL)" />
-    <button id="loadBtn">Load</button>
+  <div class="main-container">
+    <h1>🧠 NeuroTraderAI</h1>
+    <div id="error"></div>
+    <div class="signals-card">
+      <div class="signal-item">
+        <span class="signal-label">Signal</span>
+        <span id="signal" class="badge"></span>
+      </div>
+      <div class="signal-item">
+        <span class="signal-label">Confidence</span>
+        <span id="confidence" class="signal-value"></span>
+      </div>
+      <div class="signal-item">
+        <span class="signal-label">Price</span>
+        <span id="price" class="signal-value"></span>
+      </div>
+      <div class="signal-item">
+        <span class="signal-label">Updated</span>
+        <span id="timestamp" class="signal-value"></span>
+      </div>
+      <div class="signal-item">
+        <span class="signal-label">Entry Signal</span>
+        <span id="entrySignal" class="signal-value"></span>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div id="tvchart"></div>
+    </div>
+    <div class="patterns-card">
+      <div class="patterns-header" onclick="togglePatterns()">
+        <h2>Patterns & Logic</h2>
+        <span class="collapse-arrow" id="collapseArrow">▼</span>
+      </div>
+      <div class="patterns-content" id="patternsContent">
+        <div class="patterns-label">Detected Patterns</div>
+        <span id="patternStack"></span>
+        <ul id="logicList"></ul>
+      </div>
+    </div>
   </div>
+  <script src="https://s3.tradingview.com/tv.js"></script>
+  <script>
+    function togglePatterns() {
+      const content = document.getElementById('patternsContent');
+      const arrow = document.getElementById('collapseArrow');
+      if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        arrow.style.transform = 'rotate(0deg)';
+      } else {
+        content.classList.add('collapsed');
+        arrow.style.transform = 'rotate(-90deg)';
+      }
+    }
 
-  <div id="error"></div>
-
-  <div class="info">
-    <div><strong>Ticker:</strong> <span id="ticker"></span></div>
-    <div><strong>Signal:</strong> <span id="signal" class="badge"></span></div>
-    <div><strong>Confidence:</strong> <span id="confidence"></span></div>
-    <div><strong>Price:</strong> <span id="price"></span></div>
-    <div><strong>Updated:</strong> <span id="timestamp"></span></div>
-    <div><strong>Entry Signal:</strong> <span id="entrySignal"></span></div>
-    <div><strong>Patterns:</strong> <span id="patternStack"></span></div>
-  </div>
-
-  <h2>Logic</h2>
-  <ul id="logicList"></ul>
-
-  <div id="tvchart"></div>
-
-  <!-- Chart logic -->
+    // Ensure TradingView widget loads after DOM and script are ready
+    window.addEventListener('DOMContentLoaded', function() {
+      function loadTV() {
+        if (window.TradingView) {
+          new TradingView.widget({
+            autosize: true,
+            symbol: "NASDAQ:AAPL",
+            interval: "1",
+            timezone: "Etc/UTC",
+            theme: "dark",
+            style: "1",
+            locale: "en",
+            toolbar_bg: "#111",
+            enable_publishing: false,
+            hide_top_toolbar: false,
+            hide_legend: false,
+            container_id: "tvchart"
+          });
+        } else {
+          setTimeout(loadTV, 100);
+        }
+      }
+      loadTV();
+    });
+  </script>
   <script src="script.js"></script>
 </body>
 </html>
