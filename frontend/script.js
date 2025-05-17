@@ -87,11 +87,17 @@ window.addEventListener('message', async (event) => {
   }
 });
 
+// Set API base URL depending on environment
+const API_BASE = window.location.hostname.includes('localhost')
+  ? ''
+  : 'https://centurionai.onrender.com';
+
+// --- Trading Signal Fetch ---
 async function fetchSignal(ticker) {
   if (!ticker) return;
 
   try {
-    const res = await fetch(`/run?ticker=${ticker}`);
+    const res = await fetch(`${API_BASE}/run?ticker=${ticker}`);
     if (!res.ok) throw new Error("Ticker not found or backend error");
 
     const data = await res.json();
@@ -161,7 +167,7 @@ async function fetchAndRenderNews(ticker) {
   const newsList = document.getElementById("newsList");
   newsList.innerHTML = '<div class="news-placeholder">Loading news...</div>';
   try {
-    const res = await fetch(`/news?ticker=${ticker}`);
+    const res = await fetch(`${API_BASE}/news?ticker=${ticker}`);
     if (!res.ok) throw new Error("No news found");
     const articles = await res.json();
     if (!Array.isArray(articles) || articles.length === 0) {
@@ -264,7 +270,7 @@ runBacktestBtn.addEventListener("click", async () => {
   }
   backtestResults.innerHTML = '<div class="backtest-placeholder">Running backtest...</div>';
   try {
-    const res = await fetch(`/backtest?ticker=${ticker}&interval=${interval}&start=${start}&end=${end}`);
+    const res = await fetch(`${API_BASE}/backtest?ticker=${ticker}&interval=${interval}&start=${start}&end=${end}`);
     if (!res.ok) throw new Error("Backtest failed");
     const data = await res.json();
     if (data.error) throw new Error(data.error);
