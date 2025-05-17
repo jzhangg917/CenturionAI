@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: centurionai-backend
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python backend/app.py"
+    envVars:
+      - key: FINNHUB_API_KEY
+        sync: false
+    region: oregon
+    autoDeploy: true
+    runtime: python3.10
+    rootDir: .
+    healthCheckPath: /
+    buildFilter:
+      paths:
+        - backend/**
+        - requirements.txt
+
+  - type: static
+    name: centurionai-frontend
+    env: static
+    plan: free
+    buildCommand: ""
+    staticPublishPath: frontend
+    region: oregon
+    autoDeploy: true
+    rootDir: .
+    buildFilter:
+      paths:
+        - frontend/** 
